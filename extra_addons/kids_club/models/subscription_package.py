@@ -1,0 +1,288 @@
+from odoo import models, fields, api
+from odoo.exceptions import ValidationError
+
+
+class SubscriptionPackage(models.Model):
+    _name = 'subscription.package'
+    _description = 'Subscription Package'
+    _order = 'name'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
+
+    name = fields.Char(
+        string='Package Name (English)',
+        required=True,
+        tracking=True,
+        help='Name of the subscription package in English'
+    )
+    
+    name_arabic = fields.Char(
+        string='Package Name (Arabic)',
+        help='Name of the subscription package in Arabic'
+    )
+    
+    price = fields.Monetary(
+        string='Sales Price',
+        required=True,
+        tracking=True,
+        help='Price of the subscription package'
+    )
+    
+    currency_id = fields.Many2one(
+        'res.currency',
+        string='Currency',
+        default=lambda self: self.env.company.currency_id,
+        help='Currency for the package price'
+    )
+    
+    linked_product_id = fields.Many2one(
+        'product.product',
+        string='Linked Product',
+        readonly=True,
+        help='Automatically created service product linked to this package'
+    )
+    
+    description = fields.Text(
+        string='Description',
+        help='Optional description of the package'
+    )
+    
+    active = fields.Boolean(
+        string='Active',
+        default=True,
+        tracking=True,
+        help='If unchecked, it will allow you to hide the package without removing it'
+    )
+    
+    # Package Image
+    image = fields.Image(
+        string='Package Image',
+        help='Upload an image for this subscription package'
+    )
+    
+    # Visit and Duration Fields
+    number_of_visits = fields.Integer(
+        string='Number of Visits',
+        default=1,
+        tracking=True,
+        help='Maximum number of visits allowed with this package'
+    )
+    
+    date_from = fields.Date(
+        string='Valid From',
+        tracking=True,
+        help='Package validity start date'
+    )
+    
+    date_to = fields.Date(
+        string='Valid To',
+        tracking=True,
+        help='Package validity end date'
+    )
+    
+    validity_days = fields.Integer(
+        string='Validity (Days)',
+        compute='_compute_validity_days',
+        store=True,
+        tracking=True,
+        help='Number of days this package is valid (auto-calculated)'
+    )
+    
+    # Branch/Company Field
+    company_id = fields.Many2one(
+        'res.company',
+        string='Branch/Company',
+        default=lambda self: self.env.company,
+        required=True,
+        tracking=True,
+        help='Branch or company where this package is available'
+    )
+    
+    # Time Allowance Fields
+    daily_free_minutes = fields.Integer(
+        string='Daily Free Minutes',
+        default=0,
+        tracking=True,
+        help='Number of free minutes allowed per day'
+    )
+    
+    margin_minutes = fields.Integer(
+        string='Margin Minutes',
+        default=0,
+        tracking=True,
+        help='Additional buffer time in minutes'
+    )
+    
+    # Flexible Hourly Pricing
+    hourly_rate = fields.Monetary(
+        string='Hourly Rate',
+        tracking=True,
+        help='Standard hourly rate for additional time'
+    )
+    
+    peak_hourly_rate = fields.Monetary(
+        string='Peak Hour Rate',
+        tracking=True,
+        help='Hourly rate during peak hours'
+    )
+    
+    overtime_rate = fields.Monetary(
+        string='Overtime Rate',
+        tracking=True,
+        help='Rate for time beyond daily allowance'
+    )
+
+    @api.model
+    def create(self, vals):
+        """Override create to automatically generate linked service product"""
+        # Create the package first
+        package = super().create(vals)
+        
+        # Create the linked service product
+        product_vals = {
+            'name': package.name,
+            'type': 'service',
+            'list_price': package.price,
+            'sale_ok': True,
+            'purchase_ok': False,
+            'categ_id': self._get_service_category_id(),
+        }
+        
+        product = self.env['product.product'].create(product_vals)
+        
+        # Link the product to the package
+        package.linked_product_id = product.id
+        
+        return package
+
+    def write(self, vals):
+        """Override write to sync changes with linked product"""
+        result = super().write(vals)
+        
+        # Check if name or price changed
+        if 'name' in vals or 'price' in vals:
+            for package in self:
+                if package.linked_product_id:
+                    product_vals = {}
+                    if 'name' in vals:
+                        product_vals['name'] = package.name
+                    if 'price' in vals:
+                        product_vals['list_price'] = package.price
+                    
+                    package.linked_product_id.write(product_vals)
+        
+        # Handle active/inactive sync
+        if 'active' in vals:
+            for package in self:
+                if package.linked_product_id:
+                    package.linked_product_id.active = package.active
+        
+        return result
+
+    def unlink(self):
+        """Override unlink to delete linked products"""
+        # Store linked products before deletion
+        linked_products = self.mapped('linked_product_id').filtered(lambda p: p.exists())
+        
+        # Delete the packages
+        result = super().unlink()
+        
+        # Delete the linked products
+        if linked_products:
+            linked_products.unlink()
+        
+        return result
+
+    def toggle_active(self):
+        """Toggle active state and sync with linked product"""
+        for package in self:
+            package.active = not package.active
+            if package.linked_product_id:
+                package.linked_product_id.active = package.active
+
+    def _get_service_category_id(self):
+        """Get or create a service category for subscription packages"""
+        category = self.env['product.category'].search([
+            ('name', '=', 'Subscription Services')
+        ], limit=1)
+        
+        if not category:
+            category = self.env['product.category'].create({
+                'name': 'Subscription Services',
+                'parent_id': False,
+            })
+        
+        return category.id
+
+    @api.constrains('price')
+    def _check_price(self):
+        """Validate that price is positive"""
+        for package in self:
+            if package.price <= 0:
+                raise ValidationError("Package price must be greater than zero.")
+
+    @api.depends('date_from', 'date_to')
+    def _compute_validity_days(self):
+        """Compute the number of validity days based on date range"""
+        for package in self:
+            if package.date_from and package.date_to:
+                delta = package.date_to - package.date_from
+                package.validity_days = delta.days + 1  # +1 to include both start and end dates
+            else:
+                package.validity_days = 0
+
+    @api.constrains('name')
+    def _check_name(self):
+        """Validate that name is not empty"""
+        for package in self:
+            if not package.name or not package.name.strip():
+                raise ValidationError("Package name cannot be empty.")
+    
+    @api.constrains('date_from', 'date_to')
+    def _check_dates(self):
+        """Validate that date_to is after date_from"""
+        for package in self:
+            if package.date_from and package.date_to:
+                if package.date_to < package.date_from:
+                    raise ValidationError("End date must be after start date.")
+    
+    @api.constrains('number_of_visits')
+    def _check_visits(self):
+        """Validate that number of visits is positive"""
+        for package in self:
+            if package.number_of_visits <= 0:
+                raise ValidationError("Number of visits must be greater than zero.")
+    
+    @api.constrains('daily_free_minutes', 'margin_minutes')
+    def _check_minutes(self):
+        """Validate that time fields are non-negative"""
+        for package in self:
+            if package.daily_free_minutes < 0:
+                raise ValidationError("Daily free minutes cannot be negative.")
+            if package.margin_minutes < 0:
+                raise ValidationError("Margin minutes cannot be negative.")
+    
+    @api.constrains('hourly_rate', 'peak_hourly_rate', 'overtime_rate')
+    def _check_rates(self):
+        """Validate that hourly rates are non-negative"""
+        for package in self:
+            if package.hourly_rate < 0:
+                raise ValidationError("Hourly rate cannot be negative.")
+            if package.peak_hourly_rate < 0:
+                raise ValidationError("Peak hourly rate cannot be negative.")
+            if package.overtime_rate < 0:
+                raise ValidationError("Overtime rate cannot be negative.")
+
+    def action_view_linked_product(self):
+        """Action to view the linked product"""
+        self.ensure_one()
+        if not self.linked_product_id:
+            return {'type': 'ir.actions.act_window_close'}
+        
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Linked Product',
+            'res_model': 'product.product',
+            'res_id': self.linked_product_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }

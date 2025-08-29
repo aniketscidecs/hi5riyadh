@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Main Menu -->
+    <menuitem id="menu_kids_subscription_root"
+              name="Kids Club"
+              sequence="10"
+              web_icon="kids_subscription,static/description/icon.png"/>
+
+    <!-- Subscription Menu -->
+    <menuitem id="menu_subscription"
+              name="Subscriptions"
+              parent="menu_kids_subscription_root"
+              sequence="10"/>
+
+    <!-- Subscription Packages Menu Item -->
+    <menuitem id="menu_subscription_packages"
+              name="Packages"
+              parent="menu_subscription"
+              action="action_subscription_package"
+              sequence="10"/>
+</odoo>

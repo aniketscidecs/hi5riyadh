@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B6B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4ECDC4;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="url(#grad1)" stroke="#fff" stroke-width="4"/>
+  
+  <!-- Kids icon - simplified figures -->
+  <g fill="#fff">
+    <!-- Kid 1 -->
+    <circle cx="45" cy="45" r="8"/>
+    <rect x="40" y="50" width="10" height="15" rx="2"/>
+    <rect x="38" y="62" width="4" height="8" rx="1"/>
+    <rect x="48" y="62" width="4" height="8" rx="1"/>
+    
+    <!-- Kid 2 -->
+    <circle cx="83" cy="45" r="8"/>
+    <rect x="78" y="50" width="10" height="15" rx="2"/>
+    <rect x="76" y="62" width="4" height="8" rx="1"/>
+    <rect x="86" y="62" width="4" height="8" rx="1"/>
+    
+    <!-- Play elements -->
+    <circle cx="64" cy="85" r="4" fill="#FFE66D"/>
+    <polygon points="55,90 60,95 50,95" fill="#FFE66D"/>
+    <polygon points="73,90 78,95 68,95" fill="#FFE66D"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="64" y="110" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#333">KIDS CLUB</text>
+</svg>

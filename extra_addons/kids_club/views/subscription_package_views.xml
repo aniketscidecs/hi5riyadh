@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- list View -->
+    <record id="view_subscription_package_list" model="ir.ui.view">
+        <field name="name">subscription.package.list</field>
+        <field name="model">subscription.package</field>
+        <field name="arch" type="xml">
+            <list string="Subscription Packages">
+                <field name="name"/>
+                <field name="name_arabic"/>
+                <field name="price" widget="monetary"/>
+                <field name="currency_id" invisible="1"/>
+                <field name="active" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_subscription_package_form" model="ir.ui.view">
+        <field name="name">subscription.package.form</field>
+        <field name="model">subscription.package</field>
+        <field name="arch" type="xml">
+            <form string="Subscription Package">
+                <header>
+                    <button name="toggle_active" type="object" 
+                            string="Archive" class="btn-secondary"
+                            invisible="not active"/>
+                    <button name="toggle_active" type="object" 
+                            string="Unarchive" class="btn-secondary"
+                            invisible="active"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object" 
+                                name="action_view_linked_product" icon="fa-cube"
+                                invisible="not linked_product_id">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">View</span>
+                                <span class="o_stat_text">Product</span>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <widget name="web_ribbon" title="Archived" 
+                            bg_color="bg-danger" 
+                            invisible="active"/>
+                    
+                    <div class="oe_title">
+                        <div class="d-flex align-items-start">
+                            <div class="flex-grow-1 mr-3">
+                                <h1>
+                                    <field name="name" placeholder="Package Name (English)"/>
+                                </h1>
+                                <h2>
+                                    <field name="name_arabic" placeholder="Package Name (Arabic)"/>
+                                </h2>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <field name="image" widget="image" class="oe_avatar" nolabel="1" style="max-width: 120px;"/>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <group>
+                        <group string="Basic Information">
+                            <field name="price" widget="monetary"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="company_id" options="{'no_create': True}"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group>
+                        </group>
+                    </group>
+                    
+                    <group>
+                        <group string="Validity &amp; Usage">
+                            <field name="number_of_visits"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="validity_days" readonly="1"/>
+                        </group>
+                        <group string="Time Allowances">
+                            <field name="daily_free_minutes" widget="integer"/>
+                            <field name="margin_minutes" widget="integer"/>
+                        </group>
+                    </group>
+                    
+                    <group>
+                        <group string="Pricing Structure">
+                            <field name="hourly_rate" widget="monetary"/>
+                            <field name="peak_hourly_rate" widget="monetary"/>
+                            <field name="overtime_rate" widget="monetary"/>
+                        </group>
+                        <group string="Linked Product">
+                            <field name="linked_product_id" readonly="1"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Description">
+                            <field name="description" placeholder="Package description..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_subscription_package_search" model="ir.ui.view">
+        <field name="name">subscription.package.search</field>
+        <field name="model">subscription.package</field>
+        <field name="arch" type="xml">
+            <search string="Search Subscription Packages">
+                <field name="name" string="Package Name"/>
+                <field name="price"/>
+                <field name="linked_product_id"/>
+                <separator/>
+                <filter string="Active" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <separator/>
+                <group expand="0" string="Group By">
+                    <filter string="Active Status" name="group_active" context="{'group_by': 'active'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+
+</odoo>

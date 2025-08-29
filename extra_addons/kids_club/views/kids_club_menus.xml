@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Window Action for Subscription Packages - MUST be defined before menu references it -->
+    <record id="action_subscription_package" model="ir.actions.act_window">
+        <field name="name">Subscription Packages</field>
+        <field name="res_model">subscription.package</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first subscription package!
+            </p>
+            <p>
+                Define subscription packages for your Kids Club members.
+            </p>
+        </field>
+    </record>
+
+    <!-- Main Menu for Kids Club -->
+    <menuitem 
+        id="menu_kids_club_main"
+        name="Kids Club"
+        web_icon="kids_club,static/description/icon.svg"
+        sequence="10"/>
+
+    <!-- Subscription Packages Menu -->
+    <menuitem 
+        id="menu_subscription_packages"
+        name="Subscription Packages"
+        parent="menu_kids_club_main"
+        action="action_subscription_package"
+        sequence="10"/>
+
+    <!-- Configuration Menu -->
+    <menuitem 
+        id="menu_kids_club_config"
+        name="Configuration"
+        parent="menu_kids_club_main"
+        sequence="100"/>
+</odoo>

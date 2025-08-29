@@ -8,7 +8,7 @@ services:
       - "${ODOO_PORT}:8069"
     volumes:
       - ./enterprise:/mnt/enterprise-addons
-      - ./extra-addons:/mnt/extra-addons
+      - ./extra_addons:/mnt/extra-addons
       - ./odoo.conf:/etc/odoo/odoo.conf
       - hi5riyadh-odoo-data:/var/lib/odoo
       - hi5riyadh-odoo-logs:/var/log/odoo
