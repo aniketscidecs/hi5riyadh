@@ -1,3 +1,7 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_subscription_package_user,subscription.package.user,model_subscription_package,base.group_user,1,1,1,1
 access_subscription_package_manager,subscription.package.manager,model_subscription_package,base.group_system,1,1,1,1
+access_kids_child_user,kids.child.user,model_kids_child,base.group_user,1,1,1,1
+access_kids_child_manager,kids.child.manager,model_kids_child,base.group_system,1,1,1,1
+access_kids_child_subscription_user,kids.child.subscription.user,model_kids_child_subscription,base.group_user,1,1,1,1
+access_kids_child_subscription_manager,kids.child.subscription.manager,model_kids_child_subscription,base.group_system,1,1,1,1

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inherit Customer Form View to Add Children Tab -->
+    <record id="view_partner_form_kids_club" model="ir.ui.view">
+        <field name="name">res.partner.form.kids.club</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <!-- Add button in button box -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_children" type="object" class="oe_stat_button" icon="fa-child" 
+                        invisible="children_count == 0">
+                    <field name="children_count" widget="statinfo" string="Children"/>
+                </button>
+            </xpath>
+            
+            <!-- Add Kids Club fields after category_id -->
+            <xpath expr="//field[@name='category_id']" position="after">
+                <field name="is_kids_club_parent" invisible="1"/>
+                <field name="membership_status" invisible="not is_kids_club_parent"/>
+                <field name="membership_start_date" invisible="not is_kids_club_parent"/>
+            </xpath>
+            
+            <!-- Add Children tab in notebook -->
+            <xpath expr="//notebook" position="inside">
+                
+                <page string="Children" name="children_tab" invisible="not is_kids_club_parent">
+                    <field name="children_ids">
+                        <list string="Children" editable="bottom">
+                            <field name="name" required="1"/>
+                            <field name="date_of_birth" required="1"/>
+                            <field name="age" readonly="1"/>
+                            <field name="gender"/>
+                            <field name="barcode_id" readonly="1"/>
+                            <field name="active"/>
+                        </list>
+                        <form string="Child Details">
+                            <sheet>
+                                <div class="oe_button_box" name="button_box">
+                                    <button name="action_view_subscriptions" type="object" 
+                                            class="oe_stat_button" icon="fa-calendar">
+                                        <field name="subscription_count" widget="statinfo" string="Subscriptions"/>
+                                    </button>
+                                </div>
+                                <field name="image" widget="image" class="oe_avatar" options="{'preview_image': 'image_medium', 'size': [90, 90]}"/>
+                                <div class="oe_title">
+                                    <h1><field name="name" placeholder="Child's Full Name"/></h1>
+                                    <h3><field name="barcode_id" readonly="1"/></h3>
+                                </div>
+                                <group>
+                                    <group>
+                                        <field name="date_of_birth"/>
+                                        <field name="age" readonly="1"/>
+                                        <field name="gender"/>
+                                        <field name="registration_date"/>
+                                    </group>
+                                    <group>
+                                        <field name="emergency_contact"/>
+                                        <field name="emergency_phone"/>
+                                        <field name="active"/>
+                                    </group>
+                                </group>
+                                <group string="Medical Information">
+                                    <field name="medical_notes" placeholder="Any medical conditions..."/>
+                                    <field name="allergies" placeholder="Known allergies..."/>
+                                </group>
+                                <notebook>
+                                    <page string="Subscriptions">
+                                        <field name="subscription_ids">
+                                            <list string="Subscriptions">
+                                                <field name="package_id"/>
+                                                <field name="start_date"/>
+                                                <field name="end_date"/>
+                                                <field name="state"/>
+                                                <field name="payment_status"/>
+                                                <field name="price" widget="monetary"/>
+                                            </list>
+                                        </field>
+                                    </page>
+                                </notebook>
+                            </sheet>
+                            <chatter/>
+                        </form>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Customer List View for Kids Club -->
+    <record id="view_partner_list_kids_club" model="ir.ui.view">
+        <field name="name">res.partner.list.kids.club</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <list string="Kids Club Parents">
+                <field name="name"/>
+                <field name="phone"/>
+                <field name="email"/>
+                <field name="children_count"/>
+                <field name="membership_status"/>
+                <field name="membership_start_date"/>
+                <field name="is_kids_club_parent" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Customer Search View for Kids Club -->
+    <record id="view_partner_search_kids_club" model="ir.ui.view">
+        <field name="name">res.partner.search.kids.club</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <search string="Search Parents">
+                <field name="name" string="Parent Name"/>
+                <field name="phone"/>
+                <field name="email"/>
+                <field name="children_ids" string="Child Name"/>
+                
+                <filter string="Kids Club Parents" name="kids_club_parents" 
+                        domain="[('is_kids_club_parent', '=', True)]"/>
+                <filter string="Active Membership" name="active_membership" 
+                        domain="[('membership_status', '=', 'active')]"/>
+                <filter string="Has Children" name="has_children" 
+                        domain="[('children_count', '>', 0)]"/>
+                
+                <group expand="0" string="Group By">
+                    <filter string="Membership Status" name="group_membership" context="{'group_by': 'membership_status'}"/>
+                    <filter string="Number of Children" name="group_children" context="{'group_by': 'children_count'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action for Kids Club Customers -->
+    <record id="action_partner_kids_club" model="ir.actions.act_window">
+        <field name="name">Parents</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+                                      (0, 0, {'view_mode': 'list', 'view_id': ref('view_partner_list_kids_club')}),
+                                      (0, 0, {'view_mode': 'form', 'view_id': ref('base.view_partner_form')})]"/>
+        <field name="search_view_id" ref="view_partner_search_kids_club"/>
+        <field name="domain">[('customer_rank', '>', 0)]</field>
+        <field name="context">{
+            'search_default_kids_club_parents': 1,
+            'default_customer_rank': 1,
+            'default_is_kids_club_parent': True
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Add your first parent!
+            </p>
+            <p>
+                Register parents for Kids Club membership and manage their children.
+            </p>
+        </field>
+    </record>
+</odoo>

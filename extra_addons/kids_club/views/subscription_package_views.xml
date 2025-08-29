@@ -5,7 +5,7 @@
         <field name="name">subscription.package.list</field>
         <field name="model">subscription.package</field>
         <field name="arch" type="xml">
-            <list string="Subscription Packages">
+            <list string="Packages">
                 <field name="name"/>
                 <field name="name_arabic"/>
                 <field name="price" widget="monetary"/>
@@ -20,7 +20,7 @@
         <field name="name">subscription.package.form</field>
         <field name="model">subscription.package</field>
         <field name="arch" type="xml">
-            <form string="Subscription Package">
+            <form string="Package">
                 <header>
                     <button name="toggle_active" type="object" 
                             string="Archive" class="btn-secondary"
@@ -112,7 +112,7 @@
         <field name="name">subscription.package.search</field>
         <field name="model">subscription.package</field>
         <field name="arch" type="xml">
-            <search string="Search Subscription Packages">
+            <search string="Search Packages">
                 <field name="name" string="Package Name"/>
                 <field name="price"/>
                 <field name="linked_product_id"/>

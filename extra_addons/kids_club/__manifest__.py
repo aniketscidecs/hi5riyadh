@@ -20,8 +20,11 @@
     'depends': ['base', 'mail', 'contacts'],
     'data': [
         'security/ir.model.access.csv',
-        'views/kids_club_menus.xml',
+        'data/sequences.xml',
         'views/subscription_package_views.xml',
+        'views/child_views.xml',
+        'views/customer_views.xml',
+        'views/kids_club_menus.xml',
     ],
     'demo': [],
     'installable': True,
