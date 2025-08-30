@@ -9,7 +9,24 @@
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_subscriptions" type="object" class="oe_stat_button" icon="fa-calendar">
-                            <field name="subscription_ids" widget="statinfo" string="Subscriptions"/>
+                            <field name="subscription_count" widget="statinfo" string="Subscriptions"/>
+                        </button>
+                        <button name="action_view_checkins" type="object" class="oe_stat_button" icon="fa-clock-o">
+                            <field name="checkin_ids" widget="statinfo" string="Check-ins"/>
+                        </button>
+                        <button name="action_open_checkin_wizard" type="object" class="oe_stat_button" icon="fa-sign-in"
+                                invisible="is_checked_in">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_value">Check-in</span>
+                                <span class="o_stat_text">Quick</span>
+                            </div>
+                        </button>
+                        <button name="action_quick_checkout" type="object" class="oe_stat_button" icon="fa-sign-out"
+                                invisible="not is_checked_in">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_value text-danger">Checked In</span>
+                                <span class="o_stat_text">Click to Check-out</span>
+                            </div>
                         </button>
                     </div>
                     
@@ -61,8 +78,26 @@
                                     <field name="package_id"/>
                                     <field name="start_date"/>
                                     <field name="end_date"/>
+                                    <field name="remaining_days"/>
+                                    <field name="total_visits_allowed"/>
+                                    <field name="visits_used"/>
+                                    <field name="remaining_visits"/>
                                     <field name="state"/>
                                     <field name="price"/>
+                                </list>
+                            </field>
+                        </page>
+                        
+                        <page string="Check-in History" name="checkins">
+                            <field name="checkin_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="checkin_time"/>
+                                    <field name="checkout_time"/>
+                                    <field name="duration_minutes"/>
+                                    <field name="extra_minutes"/>
+                                    <field name="extra_charges"/>
+                                    <field name="state"/>
                                 </list>
                             </field>
                         </page>
@@ -204,6 +239,22 @@
                         </group>
                     </group>
                     
+                    <group string="Visit Tracking">
+                        <group>
+                            <field name="total_visits_allowed" readonly="1"/>
+                            <field name="visits_used" readonly="1"/>
+                            <field name="remaining_visits" readonly="1"/>
+                        </group>
+                        <group>
+                            <div class="alert alert-info" role="alert" invisible="remaining_visits &gt; 0">
+                                <strong>No visits remaining!</strong> This subscription has been fully used.
+                            </div>
+                            <div class="alert alert-warning" role="alert" invisible="remaining_visits &gt; 5 or remaining_visits &lt;= 0">
+                                <strong>Low visits remaining:</strong> Only <field name="remaining_visits" readonly="1"/> visits left.
+                            </div>
+                        </group>
+                    </group>
+                    
                     <notebook>
                         <page string="Packages">
                             <group>
@@ -283,4 +334,7 @@
             </p>
         </field>
     </record>
+
+
+
 </odoo>

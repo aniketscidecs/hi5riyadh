@@ -55,6 +55,37 @@
         action="action_child_subscription"
         sequence="40"/>
 
+    <!-- Check-in/Check-out Menu -->
+    <menuitem 
+        id="menu_kids_checkin_root"
+        name="Attendance"
+        parent="menu_kids_club_main"
+        sequence="50"/>
+
+    <!-- Live Dashboard Menu -->
+    <menuitem 
+        id="menu_kids_checkin_dashboard"
+        name="Live Dashboard"
+        parent="menu_kids_checkin_root"
+        action="kids_club.action_kids_checkin_dashboard"
+        sequence="10"/>
+
+    <!-- Quick Check-in Menu -->
+    <menuitem 
+        id="menu_kids_quick_checkin"
+        name="Quick Check-in"
+        parent="menu_kids_checkin_root"
+        action="kids_club.action_kids_checkin_wizard"
+        sequence="20"/>
+
+    <!-- Check-in History Menu -->
+    <menuitem 
+        id="menu_kids_checkin_history"
+        name="Check-in History"
+        parent="menu_kids_checkin_root"
+        action="kids_club.action_kids_child_checkin"
+        sequence="30"/>
+
     <!-- Configuration Menu -->
     <menuitem 
         id="menu_kids_club_config"

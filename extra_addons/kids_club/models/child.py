@@ -54,6 +54,12 @@ class Child(models.Model):
                                             compute='_compute_current_subscription', store=True)
     subscription_count = fields.Integer('Subscription Count', compute='_compute_subscription_count')
     
+    # Check-in/Check-out Information
+    checkin_ids = fields.One2many('kids.child.checkin', 'child_id', string='Check-ins')
+    is_checked_in = fields.Boolean('Currently Checked In', compute='_compute_checkin_status')
+    current_checkin_id = fields.Many2one('kids.child.checkin', string='Current Check-in', 
+                                        compute='_compute_checkin_status')
+    
     @api.model
     def _generate_barcode_id(self):
         """Generate unique barcode ID for child"""
@@ -152,8 +158,20 @@ class Child(models.Model):
     
     @api.depends('subscription_ids')
     def _compute_subscription_count(self):
-        for child in self:
-            child.subscription_count = len(child.subscription_ids)
+        for record in self:
+            record.subscription_count = len(record.subscription_ids)
+    
+    @api.depends('checkin_ids.checkout_time')
+    def _compute_checkin_status(self):
+        """Compute if child is currently checked in"""
+        for record in self:
+            current_checkin = record.checkin_ids.filtered(lambda c: not c.checkout_time)
+            if current_checkin:
+                record.is_checked_in = True
+                record.current_checkin_id = current_checkin[0]
+            else:
+                record.is_checked_in = False
+                record.current_checkin_id = False
     
     @api.depends('subscription_ids', 'subscription_ids.state', 'subscription_ids.end_date')
     def _compute_current_subscription(self):
@@ -199,6 +217,60 @@ class Child(models.Model):
             },
             'target': 'current',
         }
+    
+    def action_quick_checkout(self):
+        """Quick checkout for currently checked-in child"""
+        self.ensure_one()
+        
+        if not self.is_checked_in:
+            raise ValidationError("Child is not currently checked in.")
+        
+        # Find active check-in
+        active_checkin = self.current_checkin_id
+        if not active_checkin:
+            raise ValidationError("No active check-in found.")
+        
+        # Perform checkout
+        result = active_checkin.action_checkout()
+        
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Check-out Complete',
+            'res_model': 'kids.child.checkin',
+            'res_id': active_checkin.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+    
+    def action_view_checkins(self):
+        """Action to view check-ins for this child"""
+        self.ensure_one()
+        return {
+            'name': f'Check-ins for {self.name}',
+            'type': 'ir.actions.act_window',
+            'res_model': 'kids.child.checkin',
+            'view_mode': 'list,form',
+            'domain': [('child_id', '=', self.id)],
+            'context': {
+                'default_child_id': self.id,
+                'search_default_child_id': self.id,
+            },
+            'target': 'current',
+        }
+    
+    def action_open_checkin_wizard(self):
+        """Open quick check-in wizard for this child"""
+        self.ensure_one()
+        return {
+            'name': 'Quick Check-in',
+            'type': 'ir.actions.act_window',
+            'res_model': 'kids.checkin.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_child_id': self.id,
+            },
+        }
 
 
 class ChildSubscription(models.Model):
@@ -239,6 +311,11 @@ class ChildSubscription(models.Model):
         store=True,
         help='True if all invoices are fully paid'
     )
+    
+    # Visit Tracking Fields
+    total_visits_allowed = fields.Integer('Total Visits Allowed', compute='_compute_visit_fields', store=True)
+    visits_used = fields.Integer('Visits Used', default=0, tracking=True)
+    remaining_visits = fields.Integer('Remaining Visits', compute='_compute_visit_fields', store=True)
     
     # Pricing
     price = fields.Monetary('Price', compute='_compute_price', store=True)
@@ -298,6 +375,21 @@ class ChildSubscription(models.Model):
     def _compute_total_price(self):
         for record in self:
             record.total_price = sum(record.package_ids.mapped('price'))
+    
+    @api.depends('package_id.number_of_visits', 'package_ids.number_of_visits', 'visits_used')
+    def _compute_visit_fields(self):
+        """Compute total visits allowed and remaining visits"""
+        for record in self:
+            # Calculate total visits allowed from packages
+            total_visits = 0
+            if record.package_ids:
+                # For multiple packages, sum all visits
+                total_visits = sum(record.package_ids.mapped('number_of_visits'))
+            elif record.package_id:
+                total_visits = record.package_id.number_of_visits
+            
+            record.total_visits_allowed = total_visits
+            record.remaining_visits = max(0, total_visits - record.visits_used)
     
     @api.depends('start_date', 'package_id.validity_days', 'package_ids.validity_days')
     def _compute_end_date(self):

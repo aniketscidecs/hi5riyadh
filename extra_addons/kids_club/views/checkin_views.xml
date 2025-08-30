@@ -1,0 +1,379 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Check-in Form View -->
+    <record id="view_kids_child_checkin_form" model="ir.ui.view">
+        <field name="name">kids.child.checkin.form</field>
+        <field name="model">kids.child.checkin</field>
+        <field name="arch" type="xml">
+            <form string="Child Check-in">
+                <header>
+                    <button name="action_send_otp" type="object" string="Send OTP" 
+                            class="btn-primary" invisible="state != 'pending_otp'"/>
+                    <button name="action_checkout" type="object" string="Check Out" 
+                            class="btn-success" invisible="state != 'checked_in'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="pending_otp,checked_in,checked_out"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_extra_invoice" type="object" 
+                                class="oe_stat_button" icon="fa-file-text-o"
+                                invisible="not extra_invoice_id">
+                            <field name="extra_charges" widget="monetary"/>
+                            <div>Extra Invoice</div>
+                        </button>
+                    </div>
+                    
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    
+                    <group>
+                        <group>
+                            <field name="child_id" readonly="1"/>
+                            <field name="subscription_id" readonly="1"/>
+                            <field name="checkin_time" readonly="1"/>
+                            <field name="checkout_time" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="duration_minutes" widget="integer"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="OTP Verification" invisible="state in ['checked_out', 'cancelled']">
+                            <!-- Check-in OTP Section -->
+                            <div invisible="state not in ['pending_otp', 'checked_in', 'pending_checkout_otp']">
+                                <h4>Check-in OTP</h4>
+                                <group>
+                                    <field name="otp_code" readonly="1" invisible="not otp_code"/>
+                                    <field name="otp_sent_time" readonly="1" invisible="not otp_sent_time"/>
+                                    <field name="otp_verified_time" readonly="1" invisible="not otp_verified_time"/>
+                                </group>
+                                
+                                <!-- Check-in OTP Input Section -->
+                                <div invisible="state != 'pending_otp'">
+                                    <div class="alert alert-info" role="alert">
+                                        <strong>Check-in OTP Required:</strong> Please ask parent to provide the OTP sent to their email/mobile and enter it below.
+                                    </div>
+                                    <group>
+                                        <field name="entered_otp" placeholder="Enter check-in OTP from parent" invisible="otp_verified"/>
+                                    </group>
+                                    <div class="oe_button_box">
+                                        <button name="verify_otp_action" type="object" string="Verify Check-in OTP" 
+                                                class="btn-primary" invisible="otp_verified or not entered_otp"/>
+                                        <button name="action_resend_otp" type="object" string="Resend Check-in OTP" 
+                                                class="btn-secondary" invisible="otp_verified"/>
+                                    </div>
+                                </div>
+                                
+                                <div invisible="state not in ['checked_in', 'pending_checkout_otp']">
+                                    <div class="alert alert-success" role="alert">
+                                        <strong>✓ Check-in OTP Verified!</strong> Child is checked in.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Check-out OTP Section -->
+                            <div invisible="state not in ['pending_checkout_otp']">
+                                <hr/>
+                                <h4>Check-out OTP</h4>
+                                <group>
+                                    <field name="checkout_otp_code" readonly="1" invisible="not checkout_otp_code"/>
+                                    <field name="checkout_otp_sent_time" readonly="1" invisible="not checkout_otp_sent_time"/>
+                                    <field name="checkout_otp_verified_time" readonly="1" invisible="not checkout_otp_verified_time"/>
+                                </group>
+                                
+                                <!-- Check-out OTP Input Section -->
+                                <div invisible="state != 'pending_checkout_otp'">
+                                    <div class="alert alert-warning" role="alert">
+                                        <strong>Check-out OTP Required:</strong> Please ask parent to provide the checkout OTP sent to their email/mobile and enter it below.
+                                    </div>
+                                    <group>
+                                        <field name="entered_checkout_otp" placeholder="Enter check-out OTP from parent" invisible="checkout_otp_verified"/>
+                                    </group>
+                                    <div class="oe_button_box">
+                                        <button name="verify_checkout_otp_action" type="object" string="Verify Check-out OTP" 
+                                                class="btn-primary" invisible="checkout_otp_verified or not entered_checkout_otp"/>
+                                        <button name="action_resend_checkout_otp" type="object" string="Resend Check-out OTP" 
+                                                class="btn-secondary" invisible="checkout_otp_verified"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </page>
+                        
+                        <page string="Time &amp; Charges">
+                            <group>
+                                <group>
+                                    <field name="free_minutes_used"/>
+                                    <field name="extra_minutes"/>
+                                </group>
+                                <group>
+                                    <field name="extra_charges" widget="monetary"/>
+                                    <field name="extra_invoice_id" readonly="1" invisible="not extra_invoice_id"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Check-in List View -->
+    <record id="view_kids_child_checkin_list" model="ir.ui.view">
+        <field name="name">kids.child.checkin.list</field>
+        <field name="model">kids.child.checkin</field>
+        <field name="arch" type="xml">
+            <list string="Check-ins" decoration-success="state=='checked_out'" 
+                  decoration-info="state=='checked_in'" decoration-muted="state=='cancelled'">
+                <field name="name"/>
+                <field name="child_id"/>
+                <field name="checkin_time"/>
+                <field name="checkout_time"/>
+                <field name="duration_minutes"/>
+                <field name="extra_minutes"/>
+                <field name="extra_charges" widget="monetary"/>
+                <field name="state" widget="badge" 
+                       decoration-success="state=='checked_out'"
+                       decoration-info="state=='checked_in'"
+                       decoration-warning="state=='pending_otp'"
+                       decoration-danger="state=='cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Check-in Search View -->
+    <record id="view_kids_child_checkin_search" model="ir.ui.view">
+        <field name="name">kids.child.checkin.search</field>
+        <field name="model">kids.child.checkin</field>
+        <field name="arch" type="xml">
+            <search string="Search Check-ins">
+                <field name="name"/>
+                <field name="child_id"/>
+                <field name="checkin_time"/>
+                <field name="state"/>
+                <filter string="Active Check-ins" name="active_checkins" 
+                        domain="[('state', '=', 'checked_in')]"/>
+                <filter string="Today" name="today" 
+                        domain="[('checkin_time', '>=', context_today().strftime('%Y-%m-%d 00:00:00')),
+                                ('checkin_time', '&lt;', (context_today() + datetime.timedelta(days=1)).strftime('%Y-%m-%d 00:00:00'))]"/>
+                <filter string="This Week" name="this_week" 
+                        domain="[('checkin_time', '>=', (context_today() - datetime.timedelta(days=context_today().weekday())).strftime('%Y-%m-%d 00:00:00'))]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Child" name="group_child" context="{'group_by': 'child_id'}"/>
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Check-in Date" name="group_checkin_date" context="{'group_by': 'checkin_time:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Real-time Dashboard Kanban View -->
+    <record id="view_kids_checkin_dashboard_kanban" model="ir.ui.view">
+        <field name="name">kids.checkin.dashboard.kanban</field>
+        <field name="model">kids.child.checkin</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_dashboard o_kids_dashboard" create="false" edit="false" js_class="kids_dashboard_kanban">
+                <field name="child_id"/>
+                <field name="checkin_time"/>
+                <field name="duration_minutes"/>
+                <field name="free_minutes_used"/>
+                <field name="extra_minutes"/>
+                <field name="extra_charges"/>
+                <field name="subscription_id"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click o_kids_checkin_card" 
+                             t-att-data-checkin-id="record.id.raw_value"
+                             t-att-data-checkin-time="record.checkin_time.raw_value">
+                            
+                            <!-- Card Header with Child Info -->
+                            <div class="o_kanban_record_top mb-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="o_kanban_image me-3">
+                                        <img t-att-src="kanban_image('kids.child', 'image_small', record.child_id.raw_value)" 
+                                             alt="Child Photo" class="o_image_64_cover rounded-circle"/>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="o_kanban_record_title">
+                                            <strong class="fs-5 text-primary">
+                                                <field name="child_id"/>
+                                            </strong>
+                                        </div>
+                                        <div class="o_kanban_record_subtitle text-muted small">
+                                            <i class="fa fa-calendar me-1"/>
+                                            <field name="subscription_id"/>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-success fs-6 live-timer" 
+                                              t-att-data-checkin-time="record.checkin_time.raw_value">
+                                            <i class="fa fa-clock-o me-1"/>
+                                            <span class="timer-display">00:00</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Time Statistics -->
+                            <div class="o_kanban_record_body">
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <div class="card border-0 bg-light h-100">
+                                            <div class="card-body p-2 text-center">
+                                                <div class="text-info">
+                                                    <i class="fa fa-play-circle fs-4"/>
+                                                </div>
+                                                <div class="small text-muted">Check-in</div>
+                                                <div class="fw-bold small">
+                                                    <field name="checkin_time" widget="datetime"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="card border-0 bg-light h-100">
+                                            <div class="card-body p-2 text-center">
+                                                <div class="text-success">
+                                                    <i class="fa fa-hourglass-half fs-4"/>
+                                                </div>
+                                                <div class="small text-muted">Free Time</div>
+                                                <div class="fw-bold small">
+                                                    <field name="free_minutes_used"/> min
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Extra Time Alert -->
+                                <div class="alert alert-warning py-2 mb-2" invisible="extra_minutes == 0">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fa fa-exclamation-triangle me-2"/>
+                                        <div class="flex-grow-1">
+                                            <strong>Extra Time:</strong> <field name="extra_minutes"/> minutes
+                                        </div>
+                                        <div class="text-end">
+                                            <field name="extra_charges" widget="monetary" class="fw-bold"/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Progress Bar for Time Usage -->
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between small text-muted mb-1">
+                                        <span>Time Usage</span>
+                                        <span class="live-duration" t-att-data-checkin-time="record.checkin_time.raw_value">
+                                            <field name="duration_minutes"/> min
+                                        </span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-success time-progress" 
+                                             t-att-data-free-minutes="record.free_minutes_used.raw_value"
+                                             t-att-data-extra-minutes="record.extra_minutes.raw_value"
+                                             style="width: 60%"></div>
+                                        <div class="progress-bar bg-warning" 
+                                             t-if="record.extra_minutes.raw_value > 0"
+                                             style="width: 20%"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="o_kanban_record_bottom">
+                                <div class="d-flex gap-2">
+                                    <button name="action_checkout" type="object" 
+                                            class="btn btn-success btn-sm flex-grow-1">
+                                        <i class="fa fa-sign-out me-1"/>
+                                        Check Out
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Check-in Wizard for Quick Check-in -->
+    <record id="view_kids_checkin_wizard_form" model="ir.ui.view">
+        <field name="name">kids.checkin.wizard.form</field>
+        <field name="model">kids.checkin.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Quick Check-in">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Quick Check-in</h1>
+                    </div>
+                    <group>
+                        <field name="child_id" options="{'no_create': True}" required="1"/>
+                        <field name="barcode_scan" placeholder="Scan child's barcode"/>
+                    </group>
+                    <group string="Subscription Validation" invisible="not child_id">
+                        <field name="subscription_id" readonly="1"/>
+                        <field name="remaining_visits" readonly="1"/>
+                        <field name="validation_message" readonly="1" invisible="not validation_message"/>
+                    </group>
+                    <group string="OTP Verification" invisible="not child_id or validation_message">
+                        <field name="otp_sent" readonly="1"/>
+                        <field name="otp_code" required="otp_sent" readonly="not otp_sent"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_send_otp" type="object" string="Send OTP" 
+                            class="btn-primary" invisible="not child_id or otp_sent"/>
+                    <button name="action_verify_checkin" type="object" string="Verify &amp; Check-in" 
+                            class="btn-success" invisible="not otp_sent or not otp_code"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_kids_child_checkin" model="ir.actions.act_window">
+        <field name="name">Check-ins</field>
+        <field name="res_model">kids.child.checkin</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_today': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No check-ins found!
+            </p>
+            <p>
+                Start by checking in children using the Quick Check-in wizard.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_kids_checkin_dashboard" model="ir.actions.act_window">
+        <field name="name">🎮 Live Kids Dashboard</field>
+        <field name="res_model">kids.child.checkin</field>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="view_kids_checkin_dashboard_kanban"/>
+        <field name="domain">[('state', '=', 'checked_in')]</field>
+        <field name="context">{'create': False, 'search_default_today': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No kids are currently checked in!
+            </p>
+            <p>
+                Use the Quick Check-in wizard to start monitoring kids in real-time.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_kids_checkin_wizard" model="ir.actions.act_window">
+        <field name="name">Quick Check-in</field>
+        <field name="res_model">kids.checkin.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+
+</odoo>
