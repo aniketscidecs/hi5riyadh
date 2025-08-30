@@ -460,42 +460,6 @@ class ChildSubscription(models.Model):
             record.state = 'cancelled'
         return True
     
-    @api.depends('matched_payment_ids')
-    def _compute_payment_count(self):
-        for record in self:
-            record.payment_count = len(record.matched_payment_ids)
-    
-    @api.depends('start_date', 'end_date', 'state')
-    def _compute_is_active(self):
-        """Compute if subscription is currently active based on dates and payment status"""
-        today = fields.Date.today()
-        for record in self:
-            if record.state == 'paid' and record.start_date and record.end_date:
-                record.is_active = record.start_date <= today <= record.end_date
-            else:
-                record.is_active = False
-    
-    @api.depends('is_active')
-    def _compute_activity_status(self):
-        """Compute activity status display"""
-        for record in self:
-            if record.is_active:
-                record.activity_status = 'Active'
-            else:
-                record.activity_status = 'Inactive'
-    
-    @api.depends('name', 'child_id.name', 'package_ids', 'start_date')
-    def _compute_display_name(self):
-        for record in self:
-            child_name = record.child_id.name if record.child_id else 'Unknown Child'
-            subscription_name = record.name if record.name != 'New' else 'Draft'
-            if record.package_ids:
-                package_count = len(record.package_ids)
-                package_info = f"{package_count} Packages"
-            else:
-                package_info = record.package_id.name if record.package_id else 'No Package'
-            record.display_name = f"{subscription_name} - {child_name} ({package_info})"
-    
     @api.depends('invoice_ids', 'invoice_ids.payment_state', 'invoice_ids.state')
     def _compute_payment_status(self):
         """Compute payment status and auto-update subscription state"""
