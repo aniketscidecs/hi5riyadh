@@ -20,7 +20,7 @@
     <menuitem 
         id="menu_kids_club_main"
         name="Kids Club"
-        web_icon="kids_club,static/description/icon.svg"
+        web_icon="kids_club,static/description/icon.png"
         sequence="10"/>
 
     <!-- Subscription Packages Menu -->
