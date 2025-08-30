@@ -17,10 +17,11 @@
     """,
     'author': 'Hi5 Entertainment Centre',
     'website': 'https://hi5riyadh.com',
-    'depends': ['base', 'mail', 'contacts'],
+    'depends': ['base', 'mail', 'contacts', 'sale', 'account'],
     'data': [
         'security/ir.model.access.csv',
         'data/sequences.xml',
+        'data/subscription_sequences.xml',
         'views/subscription_package_views.xml',
         'views/child_views.xml',
         'views/customer_views.xml',

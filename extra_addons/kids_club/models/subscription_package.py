@@ -67,24 +67,27 @@ class SubscriptionPackage(models.Model):
         help='Maximum number of visits allowed with this package'
     )
     
-    date_from = fields.Date(
-        string='Valid From',
-        tracking=True,
-        help='Package validity start date'
-    )
-    
-    date_to = fields.Date(
-        string='Valid To',
-        tracking=True,
-        help='Package validity end date'
-    )
+    validity_period = fields.Selection([
+        ('weekly', 'Weekly'),
+        ('monthly', 'Monthly'),
+        ('yearly', 'Yearly'),
+        ('custom', 'Custom Days')
+    ], string='Validity Period', default='monthly', required=True, tracking=True,
+       help='Select the validity period for this package')
     
     validity_days = fields.Integer(
         string='Validity (Days)',
         compute='_compute_validity_days',
         store=True,
         tracking=True,
-        help='Number of days this package is valid (auto-calculated)'
+        help='Number of days this package is valid (auto-calculated based on period)'
+    )
+    
+    custom_validity_days = fields.Integer(
+        string='Custom Validity Days',
+        default=30,
+        tracking=True,
+        help='Custom number of validity days (only used when validity period is custom)'
     )
     
     # Branch/Company Field
@@ -220,15 +223,20 @@ class SubscriptionPackage(models.Model):
             if package.price <= 0:
                 raise ValidationError("Package price must be greater than zero.")
 
-    @api.depends('date_from', 'date_to')
+    @api.depends('validity_period', 'custom_validity_days')
     def _compute_validity_days(self):
-        """Compute the number of validity days based on date range"""
+        """Compute the number of validity days based on selected period"""
         for package in self:
-            if package.date_from and package.date_to:
-                delta = package.date_to - package.date_from
-                package.validity_days = delta.days + 1  # +1 to include both start and end dates
+            if package.validity_period == 'weekly':
+                package.validity_days = 7
+            elif package.validity_period == 'monthly':
+                package.validity_days = 30
+            elif package.validity_period == 'yearly':
+                package.validity_days = 365
+            elif package.validity_period == 'custom':
+                package.validity_days = package.custom_validity_days or 30
             else:
-                package.validity_days = 0
+                package.validity_days = 30  # Default fallback
 
     @api.constrains('name')
     def _check_name(self):
@@ -237,13 +245,12 @@ class SubscriptionPackage(models.Model):
             if not package.name or not package.name.strip():
                 raise ValidationError("Package name cannot be empty.")
     
-    @api.constrains('date_from', 'date_to')
-    def _check_dates(self):
-        """Validate that date_to is after date_from"""
+    @api.constrains('custom_validity_days')
+    def _check_custom_validity_days(self):
+        """Validate that custom validity days is positive"""
         for package in self:
-            if package.date_from and package.date_to:
-                if package.date_to < package.date_from:
-                    raise ValidationError("End date must be after start date.")
+            if package.validity_period == 'custom' and package.custom_validity_days <= 0:
+                raise ValidationError("Custom validity days must be greater than zero.")
     
     @api.constrains('number_of_visits')
     def _check_visits(self):

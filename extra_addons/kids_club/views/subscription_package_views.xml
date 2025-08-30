@@ -8,9 +8,9 @@
             <list string="Packages">
                 <field name="name"/>
                 <field name="name_arabic"/>
+                <field name="validity_period"/>
+                <field name="validity_days"/>
                 <field name="price" widget="monetary"/>
-                <field name="currency_id" invisible="1"/>
-                <field name="active" invisible="1"/>
             </list>
         </field>
     </record>
@@ -47,7 +47,7 @@
                     
                     <div class="oe_title">
                         <div class="d-flex align-items-start">
-                            <div class="flex-grow-1 mr-3">
+                            <div class="flex-grow-1" style="margin-right: 20px;">
                                 <h1>
                                     <field name="name" placeholder="Package Name (English)"/>
                                 </h1>
@@ -55,8 +55,9 @@
                                     <field name="name_arabic" placeholder="Package Name (Arabic)"/>
                                 </h2>
                             </div>
-                            <div class="flex-shrink-0">
-                                <field name="image" widget="image" class="oe_avatar" nolabel="1" style="max-width: 120px;"/>
+                            <div class="flex-shrink-0" style="margin-left: 15px;">
+                                <field name="image" widget="image" class="oe_avatar" nolabel="1" 
+                                       style="max-width: 120px; max-height: 120px; border-radius: 8px;"/>
                             </div>
                         </div>
                     </div>
@@ -75,8 +76,8 @@
                     <group>
                         <group string="Validity &amp; Usage">
                             <field name="number_of_visits"/>
-                            <field name="date_from"/>
-                            <field name="date_to"/>
+                            <field name="validity_period"/>
+                            <field name="custom_validity_days" invisible="validity_period != 'custom'"/>
                             <field name="validity_days" readonly="1"/>
                         </group>
                         <group string="Time Allowances">

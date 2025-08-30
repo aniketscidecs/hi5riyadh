@@ -62,7 +62,6 @@
                                     <field name="start_date"/>
                                     <field name="end_date"/>
                                     <field name="state"/>
-                                    <field name="payment_status"/>
                                     <field name="price"/>
                                 </list>
                             </field>
@@ -134,29 +133,95 @@
         <field name="arch" type="xml">
             <form string="Child Subscription">
                 <header>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,active,expired"/>
+                    <button name="action_confirm" type="object" 
+                            string="Confirm" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_cancel" type="object" 
+                            string="Cancel" class="btn-secondary"
+                            invisible="state in ['cancelled']"
+                            confirm="Are you sure you want to cancel this subscription?"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,paid,cancelled"/>
                 </header>
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object" 
+                                name="action_view_sale_order" icon="fa-shopping-cart"
+                                invisible="not sale_order_id">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">View</span>
+                                <span class="o_stat_text">Sale Order</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" type="object" 
+                                name="action_view_invoices" icon="fa-file-text-o"
+                                invisible="invoice_count == 0">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="invoice_count"/>
+                                </span>
+                                <span class="o_stat_text">Invoices</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" type="object" 
+                                name="action_view_payments" icon="fa-money">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="payment_count"/>
+                                </span>
+                                <span class="o_stat_text">Payments</span>
+                            </div>
+                        </button>
+                    </div>
+                    
                     <div class="oe_title">
                         <h1>
-                            <field name="display_name"/>
+                            <field name="name" readonly="1"/>
                         </h1>
+                        <h2>
+                            <field name="display_name"/>
+                        </h2>
                     </div>
                     
                     <group>
                         <group>
-                            <field name="child_id"/>
-                            <field name="package_id"/>
-                            <field name="start_date"/>
-                            <field name="end_date"/>
+                            <field name="child_id" readonly="state != 'draft'"/>
+                            <field name="start_date" readonly="state != 'draft'"/>
+                            <field name="end_date" readonly="1"/>
+                            <field name="remaining_days" readonly="1"/>
                         </group>
                         <group>
-                            <field name="price" widget="monetary"/>
+                            <field name="state"/>
+                            <field name="activity_status" widget="badge" 
+                                   decoration-success="is_active == True" 
+                                   decoration-danger="is_active == False"/>
+                            <field name="is_active" invisible="1"/>
+                            <field name="total_price" widget="monetary"/>
                             <field name="currency_id" invisible="1"/>
-                            <field name="payment_status"/>
-                            <field name="invoice_id" readonly="1"/>
                         </group>
                     </group>
+                    
+                    <notebook>
+                        <page string="Packages">
+                            <group>
+                                <field name="package_ids" widget="many2many_tags" 
+                                       readonly="state != 'draft'"
+                                       placeholder="Select packages..."/>
+                            </group>
+                            
+                            <field name="package_ids" 
+                                   readonly="state != 'draft'"
+                                   invisible="not package_ids">
+                                <list string="Selected Packages" editable="bottom">
+                                    <field name="name"/>
+                                    <field name="name_arabic"/>
+                                    <field name="price" widget="monetary"/>
+                                    <field name="number_of_visits"/>
+                                    <field name="validity_days"/>
+                                    <field name="currency_id" invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
                 <chatter/>
             </form>
@@ -170,13 +235,14 @@
         <field name="arch" type="xml">
             <list string="Child Subscriptions">
                 <field name="child_id"/>
-                <field name="package_id"/>
+                <field name="package_id" optional="show"/>
                 <field name="start_date"/>
                 <field name="end_date"/>
+                <field name="remaining_days"/>
                 <field name="state"/>
-                <field name="payment_status"/>
-                <field name="price"/>
-                <field name="currency_id"/>
+                <field name="total_price" widget="monetary"/>
+                <field name="currency_id" invisible="1"/>
+                <field name="sale_order_id" optional="hide"/>
             </list>
         </field>
     </record>

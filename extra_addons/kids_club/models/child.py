@@ -1,4 +1,5 @@
-from odoo import models, fields, api
+from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError
 from datetime import date
 import base64
 import io
@@ -9,10 +10,14 @@ from barcode.writer import ImageWriter
 
 class Child(models.Model):
     _name = 'kids.child'
-    _description = 'Child Information'
+    _description = 'Child'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _rec_name = 'name'
     _order = 'name'
+    
+    _sql_constraints = [
+        ('barcode_id_unique', 'UNIQUE(barcode_id)', 'Barcode ID must be unique for each child!'),
+    ]
 
     # Basic Information
     name = fields.Char('Child Name', required=True, tracking=True)
@@ -52,8 +57,31 @@ class Child(models.Model):
     @api.model
     def _generate_barcode_id(self):
         """Generate unique barcode ID for child"""
-        sequence = self.env['ir.sequence'].next_by_code('kids.child.barcode') or '0001'
-        return f"KC{sequence}"
+        # Try to generate a unique barcode ID
+        max_attempts = 100
+        for attempt in range(max_attempts):
+            sequence = self.env['ir.sequence'].next_by_code('kids.child.barcode') or '0001'
+            barcode_id = f"KC{sequence}"
+            
+            # Check if this barcode already exists
+            existing = self.search([('barcode_id', '=', barcode_id)], limit=1)
+            if not existing:
+                return barcode_id
+        
+        # If we couldn't generate a unique ID after max attempts, raise an error
+        raise ValidationError("Unable to generate a unique barcode ID. Please contact administrator.")
+    
+    @api.constrains('barcode_id')
+    def _check_barcode_uniqueness(self):
+        """Ensure barcode ID is unique"""
+        for record in self:
+            if record.barcode_id:
+                duplicate = self.search([
+                    ('barcode_id', '=', record.barcode_id),
+                    ('id', '!=', record.id)
+                ], limit=1)
+                if duplicate:
+                    raise ValidationError(f"Barcode ID '{record.barcode_id}' already exists for child '{duplicate.name}'. Each child must have a unique barcode ID.")
     
     @api.depends('date_of_birth')
     def _compute_age(self):
@@ -180,31 +208,62 @@ class ChildSubscription(models.Model):
     _rec_name = 'display_name'
     _order = 'start_date desc'
     
+    name = fields.Char('Subscription Number', required=True, copy=False, readonly=True, default='New')
     child_id = fields.Many2one('kids.child', string='Child', required=True, ondelete='cascade')
-    package_id = fields.Many2one('subscription.package', string='Package', required=True)
+    package_id = fields.Many2one('subscription.package', string='Package')
+    package_ids = fields.Many2many(
+        'subscription.package', 
+        'child_subscription_package_rel', 
+        'subscription_id', 
+        'package_id',
+        string='Selected Packages'
+    )
     start_date = fields.Date('Start Date', required=True, default=fields.Date.today)
-    end_date = fields.Date('End Date', required=True)
+    end_date = fields.Date('End Date', compute='_compute_end_date', store=True, readonly=True)
+    remaining_days = fields.Integer('Remaining Days', compute='_compute_remaining_days', store=False)
     state = fields.Selection([
         ('draft', 'Draft'),
-        ('active', 'Active'),
-        ('expired', 'Expired'),
+        ('confirmed', 'Confirmed'),
+        ('paid', 'Paid'),
         ('cancelled', 'Cancelled')
     ], string='Status', default='draft', tracking=True)
     
+    # Activity status - separate from workflow state
+    is_active = fields.Boolean('Is Active', compute='_compute_is_active', store=True)
+    activity_status = fields.Char('Activity Status', compute='_compute_activity_status')
+    
     # Pricing
     price = fields.Monetary('Price', compute='_compute_price', store=True)
+    total_price = fields.Monetary('Total Price', compute='_compute_total_price', store=True)
     currency_id = fields.Many2one('res.currency', string='Currency', 
                                  default=lambda self: self._get_default_currency())
     
-    # Payment
-    invoice_id = fields.Many2one('account.move', string='Invoice')
-    payment_status = fields.Selection([
-        ('unpaid', 'Unpaid'),
-        ('paid', 'Paid'),
-        ('partial', 'Partially Paid')
-    ], string='Payment Status', default='unpaid')
+    # Payment tracking fields - using Odoo's standard approach
+    matched_payment_ids = fields.Many2many(
+        string="Matched Payments",
+        comodel_name='account.payment',
+        relation='kids_child_subscription__account_payment',
+        column1='subscription_id',
+        column2='payment_id',
+        compute='_compute_matched_payment_ids',
+        copy=False,
+    )
+    payment_ids = fields.Many2many('account.payment', compute='_compute_payment_ids', string='Payments')
+    payment_count = fields.Integer(compute='_compute_payment_count')
+    
+    # Sale Order Integration
+    sale_order_id = fields.Many2one('sale.order', string='Sale Order', readonly=True)
+    invoice_ids = fields.Many2many('account.move', compute='_compute_invoice_ids', string='Invoices')
+    invoice_count = fields.Integer('Invoice Count', compute='_compute_invoice_count')
     
     display_name = fields.Char('Display Name', compute='_compute_display_name', store=True)
+    
+    @api.model
+    def create(self, vals):
+        """Override create to generate sequence number"""
+        if vals.get('name', 'New') == 'New':
+            vals['name'] = self.env['ir.sequence'].next_by_code('kids.child.subscription') or 'New'
+        return super().create(vals)
     
     @api.model
     def _get_default_currency(self):
@@ -219,30 +278,334 @@ class ChildSubscription(models.Model):
         except Exception:
             return 1
     
-    @api.depends('package_id.price')
+    @api.depends('package_id.price', 'package_ids.price')
     def _compute_price(self):
         for record in self:
-            record.price = record.package_id.price if record.package_id else 0.0
+            if record.package_ids:
+                record.price = sum(record.package_ids.mapped('price'))
+            else:
+                record.price = record.package_id.price if record.package_id else 0.0
     
-    @api.depends('child_id.name', 'package_id.name', 'start_date')
+    @api.depends('package_ids.price')
+    def _compute_total_price(self):
+        for record in self:
+            record.total_price = sum(record.package_ids.mapped('price'))
+    
+    @api.depends('start_date', 'package_id.validity_days', 'package_ids.validity_days')
+    def _compute_end_date(self):
+        """Compute end date based on start date and package validity"""
+        for record in self:
+            if record.start_date:
+                # Get validity days from selected packages or single package
+                validity_days = 0
+                if record.package_ids:
+                    # For multiple packages, use the maximum validity period
+                    validity_days = max(record.package_ids.mapped('validity_days')) if record.package_ids else 0
+                elif record.package_id:
+                    validity_days = record.package_id.validity_days
+                
+                if validity_days > 0:
+                    # Calculate end date by adding validity days to start date
+                    from datetime import timedelta
+                    record.end_date = record.start_date + timedelta(days=validity_days - 1)
+                else:
+                    record.end_date = record.start_date
+            else:
+                record.end_date = False
+    
+    @api.depends('end_date')
+    def _compute_remaining_days(self):
+        """Compute remaining days until subscription expires"""
+        today = fields.Date.today()
+        for record in self:
+            if record.end_date:
+                if record.end_date >= today:
+                    delta = record.end_date - today
+                    record.remaining_days = delta.days + 1  # +1 to include today
+                else:
+                    record.remaining_days = 0  # Expired
+            else:
+                record.remaining_days = 0
+    
+    def _compute_invoice_ids(self):
+        """Compute related invoices from sale order"""
+        for record in self:
+            if record.sale_order_id:
+                record.invoice_ids = record.sale_order_id.invoice_ids
+            else:
+                record.invoice_ids = self.env['account.move']
+    
+    @api.depends('invoice_ids')
+    def _compute_invoice_count(self):
+        for record in self:
+            record.invoice_count = len(record.invoice_ids)
+    
+    def _compute_matched_payment_ids(self):
+        """Compute matched payments from invoices using Odoo's reconciliation approach"""
+        for record in self:
+            payments = self.env['account.payment']
+            
+            if record.invoice_ids:
+                for invoice in record.invoice_ids:
+                    # Use the invoice's matched_payment_ids if available
+                    if hasattr(invoice, 'matched_payment_ids'):
+                        payments |= invoice.matched_payment_ids
+                    else:
+                        # Fallback to reconciliation-based detection
+                        receivable_lines = invoice.line_ids.filtered(
+                            lambda line: line.account_id.account_type in ('asset_receivable', 'liability_payable')
+                        )
+                        
+                        for line in receivable_lines:
+                            reconciled_lines = line.matched_debit_ids.mapped('debit_move_id') | \
+                                             line.matched_credit_ids.mapped('credit_move_id')
+                            
+                            payment_lines = reconciled_lines.filtered(lambda l: l.payment_id)
+                            payments |= payment_lines.mapped('payment_id')
+            
+            record.matched_payment_ids = payments
+
+    def _compute_payment_ids(self):
+        """Compute related payments from invoices using reconciliation"""
+        for record in self:
+            payments = self.env['account.payment']
+            
+            if record.invoice_ids:
+                for invoice in record.invoice_ids:
+                    # Get receivable/payable lines from the invoice
+                    receivable_lines = invoice.line_ids.filtered(
+                        lambda line: line.account_id.account_type in ('asset_receivable', 'liability_payable')
+                    )
+                    
+                    # Get all payments that are reconciled with these lines
+                    for line in receivable_lines:
+                        # Get reconciled move lines
+                        reconciled_lines = line.matched_debit_ids.mapped('debit_move_id') | \
+                                         line.matched_credit_ids.mapped('credit_move_id')
+                        
+                        # Filter for payment move lines and get their payments
+                        payment_lines = reconciled_lines.filtered(lambda l: l.payment_id)
+                        payments |= payment_lines.mapped('payment_id')
+            
+            record.payment_ids = payments
+    
+    @api.depends('matched_payment_ids')
+    def _compute_payment_count(self):
+        for record in self:
+            record.payment_count = len(record.matched_payment_ids)
+    
+    @api.depends('start_date', 'end_date', 'state')
+    def _compute_is_active(self):
+        """Compute if subscription is currently active based on dates and payment status"""
+        today = fields.Date.today()
+        for record in self:
+            if record.state == 'paid' and record.start_date and record.end_date:
+                record.is_active = record.start_date <= today <= record.end_date
+            else:
+                record.is_active = False
+    
+    @api.depends('is_active')
+    def _compute_activity_status(self):
+        """Compute activity status display"""
+        for record in self:
+            if record.is_active:
+                record.activity_status = 'Active'
+            else:
+                record.activity_status = 'Inactive'
+    
+    @api.depends('name', 'child_id.name', 'package_ids', 'start_date')
     def _compute_display_name(self):
         for record in self:
             child_name = record.child_id.name if record.child_id else 'Unknown Child'
-            package_name = record.package_id.name if record.package_id else 'Unknown Package'
-            start_date = record.start_date or 'No Date'
-            record.display_name = f"{child_name} - {package_name} ({start_date})"
+            subscription_name = record.name if record.name != 'New' else 'Draft'
+            if record.package_ids:
+                package_count = len(record.package_ids)
+                package_info = f"{package_count} Packages"
+            else:
+                package_info = record.package_id.name if record.package_id else 'No Package'
+            record.display_name = f"{subscription_name} - {child_name} ({package_info})"
+    
+    def action_confirm(self):
+        """Confirm the subscription and create sale order"""
+        self.ensure_one()
+        if not self.package_ids and not self.package_id:
+            raise ValidationError("Please select at least one package.")
+        
+        # Create sale order
+        sale_order = self._create_sale_order()
+        self.sale_order_id = sale_order.id
+        self.state = 'confirmed'
+        
+        # Return action to view the sale order
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Sale Order',
+            'res_model': 'sale.order',
+            'res_id': sale_order.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+    
+    def action_cancel(self):
+        """Cancel the subscription"""
+        for record in self:
+            record.state = 'cancelled'
+        return True
+    
+    @api.depends('matched_payment_ids')
+    def _compute_payment_count(self):
+        for record in self:
+            record.payment_count = len(record.matched_payment_ids)
+    
+    @api.depends('start_date', 'end_date', 'state')
+    def _compute_is_active(self):
+        """Compute if subscription is currently active based on dates and payment status"""
+        today = fields.Date.today()
+        for record in self:
+            if record.state == 'paid' and record.start_date and record.end_date:
+                record.is_active = record.start_date <= today <= record.end_date
+            else:
+                record.is_active = False
+    
+    @api.depends('is_active')
+    def _compute_activity_status(self):
+        """Compute activity status display"""
+        for record in self:
+            if record.is_active:
+                record.activity_status = 'Active'
+            else:
+                record.activity_status = 'Inactive'
+    
+    @api.depends('name', 'child_id.name', 'package_ids', 'start_date')
+    def _compute_display_name(self):
+        for record in self:
+            child_name = record.child_id.name if record.child_id else 'Unknown Child'
+            subscription_name = record.name if record.name != 'New' else 'Draft'
+            if record.package_ids:
+                package_count = len(record.package_ids)
+                package_info = f"{package_count} Packages"
+            else:
+                package_info = record.package_id.name if record.package_id else 'No Package'
+            record.display_name = f"{subscription_name} - {child_name} ({package_info})"
+    
+    def _create_sale_order(self):
+        """Create sale order with selected packages"""
+        self.ensure_one()
+        
+        # Get customer (parent)
+        customer = self.child_id.parent_id
+        if not customer:
+            raise ValidationError(_("Child must have a parent assigned."))
+        
+        # Create sale order
+        sale_order_vals = {
+            'partner_id': customer.id,
+            'date_order': fields.Datetime.now(),
+            'origin': self.name,
+        }
+        sale_order = self.env['sale.order'].create(sale_order_vals)
+        
+        # Get packages to process
+        packages = self.package_ids if self.package_ids else [self.package_id] if self.package_id else []
+        
+        # Create order lines for each package
+        for package in packages:
+            if package.linked_product_id:
+                order_line_vals = {
+                    'order_id': sale_order.id,
+                    'product_id': package.linked_product_id.id,
+                    'name': f"{package.name} - {self.child_id.barcode_id}",
+                    'product_uom_qty': 1,
+                    'price_unit': package.price,
+                }
+                self.env['sale.order.line'].create(order_line_vals)
+        
+        return sale_order
+    
+    def action_view_sale_order(self):
+        """Action to view the related sale order"""
+        self.ensure_one()
+        if not self.sale_order_id:
+            return {'type': 'ir.actions.act_window_close'}
+        
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Sale Order'),
+            'res_model': 'sale.order',
+            'res_id': self.sale_order_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+    
+    def action_view_invoices(self):
+        """Action to view related invoices"""
+        self.ensure_one()
+        if not self.invoice_ids:
+            return {'type': 'ir.actions.act_window_close'}
+        
+        if len(self.invoice_ids) == 1:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Invoice',
+                'res_model': 'account.move',
+                'res_id': self.invoice_ids[0].id,
+                'view_mode': 'form',
+                'target': 'current',
+            }
+        else:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Invoices',
+                'res_model': 'account.move',
+                'view_mode': 'list,form',
+                'domain': [('id', 'in', self.invoice_ids.ids)],
+                'target': 'current',
+            }
+    
+    def action_view_payments(self):
+        """Open payment records related to this subscription"""
+        if not self.matched_payment_ids:
+            return {'type': 'ir.actions.act_window_close'}
+        
+        if len(self.matched_payment_ids) == 1:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Payment'),
+                'res_model': 'account.payment',
+                'res_id': self.matched_payment_ids[0].id,
+                'view_mode': 'form',
+                'target': 'current',
+            }
+        else:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Payments'),
+                'res_model': 'account.payment',
+                'view_mode': 'list,form',
+                'domain': [('id', 'in', self.matched_payment_ids.ids)],
+                'target': 'current',
+            }
+    
+    def _activate_paid_subscriptions(self):
+        """Activate subscriptions that are paid and within date range"""
+        today = fields.Date.today()
+        paid_subscriptions = self.search([
+            ('state', '=', 'paid'),
+            ('start_date', '<=', today)
+        ])
+        paid_subscriptions.write({'state': 'active'})
     
     @api.model
     def _cron_update_subscription_status(self):
-        """Cron job to update subscription status based on dates"""
+        """Cron job to update subscription status based on dates and payments"""
         today = fields.Date.today()
         
-        # Activate subscriptions that should be active
-        draft_subscriptions = self.search([
-            ('state', '=', 'draft'),
-            ('start_date', '<=', today)
-        ])
-        draft_subscriptions.write({'state': 'active'})
+        # Update payment status for all confirmed subscriptions
+        confirmed_subscriptions = self.search([('state', 'in', ['confirmed', 'paid'])])
+
+        
+        # Activate paid subscriptions that should be active
+        self._activate_paid_subscriptions()
         
         # Expire subscriptions that have passed end date
         active_subscriptions = self.search([

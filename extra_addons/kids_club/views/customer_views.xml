@@ -72,7 +72,7 @@
                                                 <field name="start_date"/>
                                                 <field name="end_date"/>
                                                 <field name="state"/>
-                                                <field name="payment_status"/>
+
                                                 <field name="price" widget="monetary"/>
                                             </list>
                                         </field>
