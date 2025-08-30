@@ -232,6 +232,14 @@ class ChildSubscription(models.Model):
     is_active = fields.Boolean('Is Active', compute='_compute_is_active', store=True)
     activity_status = fields.Char('Activity Status', compute='_compute_activity_status')
     
+    # Payment monitoring
+    is_fully_paid = fields.Boolean(
+        string='Is Fully Paid',
+        compute='_compute_payment_status',
+        store=True,
+        help='True if all invoices are fully paid'
+    )
+    
     # Pricing
     price = fields.Monetary('Price', compute='_compute_price', store=True)
     total_price = fields.Monetary('Total Price', compute='_compute_total_price', store=True)
@@ -487,6 +495,136 @@ class ChildSubscription(models.Model):
             else:
                 package_info = record.package_id.name if record.package_id else 'No Package'
             record.display_name = f"{subscription_name} - {child_name} ({package_info})"
+    
+    @api.depends('invoice_ids', 'invoice_ids.payment_state', 'invoice_ids.state')
+    def _compute_payment_status(self):
+        """Compute payment status and auto-update subscription state"""
+        import logging
+        _logger = logging.getLogger(__name__)
+        
+        for record in self:
+            _logger.info(f"Checking payment status for subscription {record.name}")
+            
+            if not record.invoice_ids:
+                _logger.info(f"No invoices found for subscription {record.name}")
+                record.is_fully_paid = False
+                continue
+            
+            _logger.info(f"Found {len(record.invoice_ids)} invoices for subscription {record.name}")
+            
+            # Only consider posted invoices (not draft or cancelled)
+            posted_invoices = record.invoice_ids.filtered(lambda inv: inv.state == 'posted')
+            _logger.info(f"Posted invoices: {len(posted_invoices)}")
+            
+            if not posted_invoices:
+                record.is_fully_paid = False
+                continue
+            
+            # Check payment status of each invoice
+            for invoice in posted_invoices:
+                _logger.info(f"Invoice {invoice.name}: state={invoice.state}, payment_state={invoice.payment_state}")
+            
+            # Check if all posted invoices are paid
+            all_paid = all(invoice.payment_state == 'paid' for invoice in posted_invoices)
+            record.is_fully_paid = all_paid
+            
+            _logger.info(f"All invoices paid: {all_paid}, Current subscription state: {record.state}")
+            
+            # Auto-update subscription state to 'paid' when fully paid
+            if all_paid and record.state == 'confirmed':
+                _logger.info(f"Updating subscription {record.name} state to 'paid'")
+                record.with_context(skip_payment_check=True).write({'state': 'paid'})
+            else:
+                _logger.info(f"Not updating state: all_paid={all_paid}, state={record.state}")
+    
+    def write(self, vals):
+        """Override write to trigger payment status check when invoices change"""
+        result = super().write(vals)
+        
+        # If invoice_ids changed, recompute payment status
+        if 'invoice_ids' in vals or 'sale_order_id' in vals:
+            self._compute_payment_status()
+        
+        return result
+    
+    @api.model
+    def _check_payment_status_cron(self):
+        """Cron job to periodically check and update payment status"""
+        # Find all confirmed subscriptions that might need status updates
+        confirmed_subscriptions = self.search([
+            ('state', '=', 'confirmed'),
+            ('invoice_ids', '!=', False)
+        ])
+        
+        for subscription in confirmed_subscriptions:
+            subscription._compute_payment_status()
+    
+    def action_check_payment_status(self):
+        """Manual action to check and update payment status"""
+        import logging
+        _logger = logging.getLogger(__name__)
+        
+        self.ensure_one()
+        _logger.info(f"Manual payment status check triggered for {self.name}")
+        
+        # Direct payment status check without computed field
+        if not self.invoice_ids:
+            message = "No invoices found for this subscription."
+            _logger.info(message)
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Payment Status Check',
+                    'message': message,
+                    'type': 'warning'
+                }
+            }
+        
+        posted_invoices = self.invoice_ids.filtered(lambda inv: inv.state == 'posted')
+        if not posted_invoices:
+            message = f"Found {len(self.invoice_ids)} invoices, but none are posted yet."
+            _logger.info(message)
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Payment Status Check',
+                    'message': message,
+                    'type': 'info'
+                }
+            }
+        
+        # Check each invoice payment status
+        payment_info = []
+        all_paid = True
+        for invoice in posted_invoices:
+            is_paid = invoice.payment_state == 'paid'
+            payment_info.append(f"Invoice {invoice.name}: {invoice.payment_state}")
+            if not is_paid:
+                all_paid = False
+        
+        _logger.info(f"Payment status check: {payment_info}")
+        
+        if all_paid and self.state == 'confirmed':
+            # Update state directly
+            self.write({'state': 'paid'})
+            message = f"All invoices are paid! Subscription updated to 'Paid' status.\n\n" + "\n".join(payment_info)
+            _logger.info(f"Updated subscription {self.name} to paid status")
+        else:
+            reason = "not all invoices are paid" if not all_paid else f"subscription state is '{self.state}' (not 'confirmed')"
+            message = f"Cannot update to 'Paid' status because {reason}.\n\n" + "\n".join(payment_info)
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Payment Status Check Result',
+                'message': message,
+                'type': 'success' if all_paid else 'warning',
+                'sticky': True
+            }
+        }
     
     def _create_sale_order(self):
         """Create sale order with selected packages"""

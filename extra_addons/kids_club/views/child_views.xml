@@ -138,8 +138,12 @@
                             invisible="state != 'draft'"/>
                     <button name="action_cancel" type="object" 
                             string="Cancel" class="btn-secondary"
-                            invisible="state in ['cancelled']"
+                            invisible="state in ('draft', 'cancelled')"
                             confirm="Are you sure you want to cancel this subscription?"/>
+                    <button name="action_check_payment_status" type="object" string="Check Payment Status" 
+                            class="btn-secondary" 
+                            invisible="state != 'confirmed'"
+                            help="Manually check and update payment status"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,paid,cancelled"/>
                 </header>
                 <sheet>
@@ -235,11 +239,13 @@
         <field name="arch" type="xml">
             <list string="Child Subscriptions">
                 <field name="child_id"/>
-                <field name="package_id" optional="show"/>
+                <field name="package_id" optional="hide"/>
+                <field name="package_ids" widget="many2many_tags" optional="show"/>
                 <field name="start_date"/>
                 <field name="end_date"/>
                 <field name="remaining_days"/>
                 <field name="state"/>
+                <field name="activity_status" widget="badge" decoration-success="activity_status == 'active'" decoration-danger="activity_status == 'inactive'"/>
                 <field name="total_price" widget="monetary"/>
                 <field name="currency_id" invisible="1"/>
                 <field name="sale_order_id" optional="hide"/>
