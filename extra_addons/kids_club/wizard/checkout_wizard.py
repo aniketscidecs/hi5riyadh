@@ -58,8 +58,8 @@ class CheckoutWizard(models.TransientModel):
         if self.checkin_id.state != 'checked_in':
             raise ValidationError("Child must be in checked-in state to initiate checkout.")
         
-        # Send checkout OTP
-        result = self.checkin_id.action_checkout()
+        # Send checkout OTP directly
+        result = self.checkin_id.action_send_checkout_otp()
         
         # Update wizard state
         self.current_state = 'pending_otp'
@@ -94,15 +94,9 @@ class CheckoutWizard(models.TransientModel):
             # Update wizard state
             self.current_state = 'completed'
             
-            # Return success message and close wizard
+            # Auto-close wizard after successful checkout
             return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': 'Checkout Complete!',
-                    'message': f'{self.child_id.name} has been successfully checked out.',
-                    'type': 'success'
-                }
+                'type': 'ir.actions.act_window_close'
             }
             
         except ValidationError as e:

@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Template for Dashboard with Real-time Timer -->
+    <template id="dashboard_timer_template" name="Kids Dashboard Timer">
+        <script type="text/javascript">
+            // Real-time Dashboard Timer
+            (function() {
+                'use strict';
+                
+                let timerInterval = null;
+                
+                function startDashboardTimer() {
+                    // Clear any existing timer
+                    if (timerInterval) {
+                        clearInterval(timerInterval);
+                    }
+                    
+                    console.log('Kids Dashboard Timer: Starting...');
+                    
+                    // Update every 100ms for smooth millisecond display
+                    timerInterval = setInterval(function() {
+                        updateAllTimers();
+                    }, 100);
+                }
+                
+                function updateAllTimers() {
+                    const rows = document.querySelectorAll('.o_data_row');
+                    
+                    rows.forEach(function(row) {
+                        const checkinCell = row.querySelector('td[name="checkin_time"]');
+                        const timerCell = row.querySelector('td[name="live_timer"]');
+                        
+                        if (checkinCell && timerCell) {
+                            const checkinText = checkinCell.textContent.trim();
+                            if (checkinText) {
+                                const checkinTime = parseCheckinTime(checkinText);
+                                if (checkinTime) {
+                                    const now = new Date();
+                                    const duration = now - checkinTime;
+                                    const formatted = formatDurationWithMs(duration);
+                                    
+                                    // Update timer display
+                                    timerCell.textContent = formatted;
+                                    
+                                    // Apply color coding
+                                    const minutes = duration / (1000 * 60);
+                                    timerCell.style.fontFamily = 'monospace';
+                                    timerCell.style.fontWeight = 'bold';
+                                    
+                                    if (minutes < 5) {
+                                        timerCell.style.color = '#28a745'; // Green
+                                    } else if (minutes < 10) {
+                                        timerCell.style.color = '#ffc107'; // Yellow
+                                    } else {
+                                        timerCell.style.color = '#dc3545'; // Red
+                                        timerCell.style.animation = 'pulse 1s infinite';
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                function parseCheckinTime(timeStr) {
+                    try {
+                        const clean = timeStr.replace(/\s+/g, ' ').trim();
+                        let date = new Date(clean);
+                        
+                        if (isNaN(date.getTime())) {
+                            // Try DD/MM/YYYY HH:MM:SS format
+                            const parts = clean.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+                            if (parts) {
+                                const [, day, month, year, hour, minute, second] = parts;
+                                date = new Date(year, month - 1, day, hour, minute, second);
+                            }
+                        }
+                        
+                        return isNaN(date.getTime()) ? null : date;
+                    } catch (e) {
+                        return null;
+                    }
+                }
+                
+                function formatDurationWithMs(ms) {
+                    const totalSec = Math.floor(ms / 1000);
+                    const centisec = Math.floor((ms % 1000) / 10);
+                    
+                    const hours = Math.floor(totalSec / 3600);
+                    const minutes = Math.floor((totalSec % 3600) / 60);
+                    const seconds = totalSec % 60;
+                    
+                    if (hours > 0) {
+                        return hours.toString().padStart(2, '0') + ':' + 
+                               minutes.toString().padStart(2, '0') + ':' + 
+                               seconds.toString().padStart(2, '0') + '.' + 
+                               centisec.toString().padStart(2, '0');
+                    } else {
+                        return minutes.toString().padStart(2, '0') + ':' + 
+                               seconds.toString().padStart(2, '0') + '.' + 
+                               centisec.toString().padStart(2, '0');
+                    }
+                }
+                
+                // Initialize when DOM is ready
+                function initTimer() {
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', function() {
+                            setTimeout(startDashboardTimer, 1000);
+                        });
+                    } else {
+                        setTimeout(startDashboardTimer, 1000);
+                    }
+                }
+                
+                // Start the timer
+                initTimer();
+                
+                // Also start on page navigation (for SPA behavior)
+                if (window.addEventListener) {
+                    window.addEventListener('hashchange', function() {
+                        setTimeout(startDashboardTimer, 1000);
+                    });
+                }
+                
+            })();
+        </script>
+        
+        <style>
+            @keyframes pulse {
+                0% { opacity: 1; transform: scale(1); }
+                50% { opacity: 0.7; transform: scale(1.05); }
+                100% { opacity: 1; transform: scale(1); }
+            }
+            
+            .live-timer-cell {
+                font-family: 'Courier New', monospace !important;
+                font-weight: bold !important;
+                text-align: center !important;
+                min-width: 120px !important;
+            }
+        </style>
+    </template>
+</odoo>

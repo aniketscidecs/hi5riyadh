@@ -17,11 +17,11 @@
     """,
     'author': 'Hi5 Entertainment Centre',
     'website': 'https://hi5riyadh.com',
-    'depends': ['base', 'mail', 'contacts', 'sale', 'account'],
+    'depends': ['base', 'mail', 'contacts', 'sale', 'account', 'web'],
     'assets': {
         'web.assets_backend': [
-            'kids_club/static/src/css/kids_dashboard.css',
-            'kids_club/static/src/js/kids_dashboard.js',
+            'kids_club/static/src/css/dashboard_timer.css',
+            'kids_club/static/src/js/dashboard_timer.js',
         ],
     },
     'version': '1.0.1',  # Force asset reload

@@ -226,22 +226,9 @@ class CheckinWizard(models.TransientModel):
         try:
             result = self.checkin_id.action_verify_otp(self.otp_code)
             
-            # Update wizard state
-            self.current_state = 'checked_in'
-            self.otp_code = False  # Clear OTP field
-            
-            # Trigger onchange to repopulate subscription fields after wizard reload
-            self._onchange_child_id()
-            
-            # Return action to reload the wizard with updated state
+            # Auto-close wizard after successful check-in
             return {
-                'type': 'ir.actions.act_window',
-                'name': 'Quick Check-in/Check-out',
-                'res_model': 'kids.checkin.wizard',
-                'res_id': self.id,
-                'view_mode': 'form',
-                'target': 'new',
-                'context': self.env.context,
+                'type': 'ir.actions.act_window_close'
             }
             
         except ValidationError as e:
@@ -257,8 +244,8 @@ class CheckinWizard(models.TransientModel):
         if not self.checkin_id or self.checkin_id.state != 'checked_in':
             raise ValidationError("Child is not currently checked in.")
         
-        # Initiate checkout (sends OTP)
-        result = self.checkin_id.action_checkout()
+        # Send OTP directly (not through action_checkout)
+        self.checkin_id.action_send_checkout_otp()
         
         # Update wizard state
         self.checkout_otp_sent = True
@@ -294,22 +281,9 @@ class CheckinWizard(models.TransientModel):
         try:
             result = self.checkin_id.action_verify_checkout_otp(self.checkout_otp_code)
             
-            # Update wizard state
-            self.current_state = 'checked_out'
-            self.checkout_otp_code = False  # Clear OTP field
-            
-            # Trigger onchange to repopulate subscription fields after wizard reload
-            self._onchange_child_id()
-            
-            # Return action to reload the wizard with updated state
+            # Auto-close wizard after successful checkout
             return {
-                'type': 'ir.actions.act_window',
-                'name': 'Quick Check-in/Check-out',
-                'res_model': 'kids.checkin.wizard',
-                'res_id': self.id,
-                'view_mode': 'form',
-                'target': 'new',
-                'context': self.env.context,
+                'type': 'ir.actions.act_window_close'
             }
             
         except ValidationError as e:

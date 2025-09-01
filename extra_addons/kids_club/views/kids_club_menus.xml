@@ -23,13 +23,7 @@
         web_icon="kids_club,static/description/icon.png"
         sequence="10"/>
 
-    <!-- Subscription Packages Menu -->
-    <menuitem 
-        id="menu_subscription_packages"
-        name="Packages"
-        parent="menu_kids_club_main"
-        action="action_subscription_package"
-        sequence="10"/>
+
 
     <!-- Parents Menu -->
     <menuitem 
@@ -86,10 +80,18 @@
         action="kids_club.action_kids_child_checkin"
         sequence="30"/>
 
-    <!-- Configuration Menu -->
+    <!-- Configuration Root Menu -->
     <menuitem 
         id="menu_kids_club_config"
         name="Configuration"
         parent="menu_kids_club_main"
         sequence="100"/>
+
+    <!-- Packages under Configuration -->
+    <menuitem 
+        id="menu_subscription_packages"
+        name="Packages"
+        parent="menu_kids_club_config"
+        action="action_subscription_package"
+        sequence="10"/>
 </odoo>

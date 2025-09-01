@@ -87,10 +87,11 @@
                     </group>
                     
                     <group>
-                        <group string="Pricing Structure">
-                            <field name="hourly_rate" widget="monetary"/>
-                            <field name="peak_hourly_rate" widget="monetary"/>
-                            <field name="overtime_rate" widget="monetary"/>
+                        <group string="Extra Time Pricing">
+                            <field name="extra_time_charge_per_minute" widget="monetary"/>
+                            <div class="text-muted small" colspan="2">
+                                Extra charges = (Total minutes - Daily free minutes - Margin minutes) × Per minute rate
+                            </div>
                         </group>
                         <group string="Linked Product">
                             <field name="linked_product_id" readonly="1"/>

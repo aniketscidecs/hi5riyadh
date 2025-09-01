@@ -40,10 +40,18 @@ class ChildCheckin(models.Model):
     extra_charges = fields.Monetary('Extra Charges', compute='_compute_extra_charges', store=True)
     currency_id = fields.Many2one('res.currency', related='subscription_id.currency_id')
     
+    # Live timer display with seconds
+    live_timer = fields.Char('Live Timer', compute='_compute_live_timer')
+    
+    # Payment confirmation
+    payment_confirmed = fields.Boolean('Payment Confirmed', default=False)
+    payment_confirmation_time = fields.Datetime('Payment Confirmed Time')
+    
     # Status
     state = fields.Selection([
         ('pending_otp', 'Pending Check-in OTP'),
         ('checked_in', 'Checked In'),
+        ('pending_payment', 'Pending Payment Confirmation'),
         ('pending_checkout_otp', 'Pending Check-out OTP'),
         ('checked_out', 'Checked Out'),
         ('cancelled', 'Cancelled')
@@ -72,6 +80,39 @@ class ChildCheckin(models.Model):
                 record.duration_minutes = int(delta.total_seconds() / 60)
             else:
                 record.duration_minutes = 0
+    
+    @api.depends('checkin_time', 'checkout_time', 'state')
+    def _compute_live_timer(self):
+        """Compute live timer display with hours, minutes, and seconds"""
+        for record in self:
+            if record.state == 'checked_in' and record.checkin_time and not record.checkout_time:
+                # Calculate current duration for active check-ins
+                delta = fields.Datetime.now() - record.checkin_time
+                total_seconds = int(delta.total_seconds())
+                
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                seconds = total_seconds % 60
+                
+                if hours > 0:
+                    record.live_timer = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                else:
+                    record.live_timer = f"{minutes:02d}:{seconds:02d}"
+            elif record.checkout_time:
+                # For completed check-ins, show final duration
+                delta = record.checkout_time - record.checkin_time
+                total_seconds = int(delta.total_seconds())
+                
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                seconds = total_seconds % 60
+                
+                if hours > 0:
+                    record.live_timer = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                else:
+                    record.live_timer = f"{minutes:02d}:{seconds:02d}"
+            else:
+                record.live_timer = "00:00"
     
     @api.depends('duration_minutes', 'subscription_id')
     def _compute_time_usage(self):
@@ -105,26 +146,25 @@ class ChildCheckin(models.Model):
     
     @api.depends('extra_minutes', 'subscription_id')
     def _compute_extra_charges(self):
-        """Compute extra charges for overtime"""
+        """Compute extra charges for overtime using per-minute pricing"""
         for record in self:
             if record.extra_minutes <= 0 or not record.subscription_id:
                 record.extra_charges = 0.0
                 continue
             
-            # Get overtime rate from packages
-            overtime_rate = 0.0
+            # Get per-minute charge rate from packages
+            per_minute_rate = 0.0
             
             if record.subscription_id.package_ids:
-                # For multiple packages, use maximum overtime rate
-                rates = record.subscription_id.package_ids.mapped('overtime_rate')
-                overtime_rate = max(rates) if rates else 0.0
+                # For multiple packages, use maximum per-minute rate
+                rates = record.subscription_id.package_ids.mapped('extra_time_charge_per_minute')
+                per_minute_rate = max(rates) if rates else 0.0
             elif record.subscription_id.package_id:
-                overtime_rate = record.subscription_id.package_id.overtime_rate
+                per_minute_rate = record.subscription_id.package_id.extra_time_charge_per_minute
             
-            if overtime_rate > 0:
-                # Calculate charges based on extra minutes
-                extra_hours = record.extra_minutes / 60.0
-                record.extra_charges = extra_hours * overtime_rate
+            if per_minute_rate > 0:
+                # Calculate charges: extra_minutes * per_minute_rate
+                record.extra_charges = record.extra_minutes * per_minute_rate
             else:
                 record.extra_charges = 0.0
     
@@ -237,17 +277,67 @@ class ChildCheckin(models.Model):
         }
     
     def action_checkout(self):
-        """Initiate checkout process - send OTP for verification"""
+        """Open checkout wizard from dashboard"""
         self.ensure_one()
-        
         if self.state != 'checked_in':
             raise ValidationError("Child is not currently checked in.")
         
-        # Change state to pending checkout OTP
-        self.write({'state': 'pending_checkout_otp'})
+        # Open the checkin wizard in checkout mode
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Quick Check-in/Check-out',
+            'res_model': 'kids.checkin.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_child_id': self.child_id.id,
+                'default_checkin_id': self.id,
+                'default_action_type': 'checkout',
+            }
+        }
+    
+    def action_dashboard_checkout(self):
+        """Use the same working checkout wizard as child form smart button"""
+        self.ensure_one()
+        if self.state != 'checked_in':
+            raise ValidationError("Child is not currently checked in.")
         
-        # Send checkout OTP
-        return self.action_send_checkout_otp()
+        # Use the exact same working checkout wizard as child form smart button
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Checkout',
+            'res_model': 'kids.checkout.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_child_id': self.child_id.id,
+            },
+        }
+    
+    def action_confirm_payment(self):
+        """Confirm payment for extra charges and proceed to OTP verification"""
+        self.ensure_one()
+        if self.state != 'pending_payment':
+            raise ValidationError("Payment confirmation is not required at this stage.")
+        
+        # Confirm payment
+        self.write({
+            'payment_confirmed': True,
+            'payment_confirmation_time': fields.Datetime.now(),
+        })
+        
+        # Proceed to checkout OTP
+        self.action_send_checkout_otp()
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Payment Confirmed',
+                'message': f'Payment of {self.extra_charges:.2f} {self.currency_id.symbol} confirmed. Checkout OTP has been sent.',
+                'type': 'success'
+            }
+        }
     
     def action_send_checkout_otp(self):
         """Send OTP to parent for check-out verification"""

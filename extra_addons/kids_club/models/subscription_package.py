@@ -115,23 +115,12 @@ class SubscriptionPackage(models.Model):
         help='Additional buffer time in minutes'
     )
     
-    # Flexible Hourly Pricing
-    hourly_rate = fields.Monetary(
-        string='Hourly Rate',
+    # Extra Time Pricing (Simplified)
+    extra_time_charge_per_minute = fields.Monetary(
+        string='Extra Time Charge (per minute)',
+        default=5.0,
         tracking=True,
-        help='Standard hourly rate for additional time'
-    )
-    
-    peak_hourly_rate = fields.Monetary(
-        string='Peak Hour Rate',
-        tracking=True,
-        help='Hourly rate during peak hours'
-    )
-    
-    overtime_rate = fields.Monetary(
-        string='Overtime Rate',
-        tracking=True,
-        help='Rate for time beyond daily allowance'
+        help='Charge per minute for time beyond daily free minutes + margin minutes'
     )
 
     @api.model
@@ -268,16 +257,12 @@ class SubscriptionPackage(models.Model):
             if package.margin_minutes < 0:
                 raise ValidationError("Margin minutes cannot be negative.")
     
-    @api.constrains('hourly_rate', 'peak_hourly_rate', 'overtime_rate')
-    def _check_rates(self):
-        """Validate that hourly rates are non-negative"""
+    @api.constrains('extra_time_charge_per_minute')
+    def _check_extra_time_charge(self):
+        """Validate that extra time charge per minute is non-negative"""
         for package in self:
-            if package.hourly_rate < 0:
-                raise ValidationError("Hourly rate cannot be negative.")
-            if package.peak_hourly_rate < 0:
-                raise ValidationError("Peak hourly rate cannot be negative.")
-            if package.overtime_rate < 0:
-                raise ValidationError("Overtime rate cannot be negative.")
+            if package.extra_time_charge_per_minute < 0:
+                raise ValidationError("Extra time charge per minute cannot be negative.")
 
     def action_view_linked_product(self):
         """Action to view the linked product"""
