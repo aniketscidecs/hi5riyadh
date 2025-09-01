@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Default Rooms for Kids Club -->
+    <record id="room_play_area" model="kids.room">
+        <field name="name">Play Area</field>
+        <field name="room_number">R001</field>
+        <field name="capacity">15</field>
+        <field name="active">True</field>
+    </record>
+    
+    <record id="room_art_room" model="kids.room">
+        <field name="name">Art Room</field>
+        <field name="room_number">R002</field>
+        <field name="capacity">10</field>
+        <field name="active">True</field>
+    </record>
+    
+    <record id="room_game_zone" model="kids.room">
+        <field name="name">Game Zone</field>
+        <field name="room_number">R003</field>
+        <field name="capacity">12</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

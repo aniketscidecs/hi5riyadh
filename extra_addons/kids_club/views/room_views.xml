@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Room Form View -->
+    <record id="view_kids_room_form" model="ir.ui.view">
+        <field name="name">kids.room.form</field>
+        <field name="model">kids.room</field>
+        <field name="arch" type="xml">
+            <form string="Room">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object" name="toggle_active" icon="fa-archive">
+                            <field name="active" widget="boolean_button" options='{"terminology": "archive"}'/>
+                        </button>
+                    </div>
+                    
+                    <group>
+                        <group>
+                            <field name="name" placeholder="e.g., Play Area, Art Room"/>
+                            <field name="room_number" placeholder="e.g., R001, A-1"/>
+                            <field name="supervisor_id" options="{'no_create': True}"/>
+                        </group>
+                        <group>
+                            <field name="capacity"/>
+                            <!-- <field name="current_checkins" readonly="1"/>
+                            <field name="available_spots" readonly="1"/>
+                            <field name="is_full" readonly="1"/> -->
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Room Information" name="room_info">
+                            <group string="Room Details">
+                                <div class="alert alert-info" role="alert">
+                                    <strong>Room Capacity:</strong> 
+                                    <field name="capacity" readonly="1" nolabel="1"/> children maximum
+                                </div>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Room list View -->
+    <record id="view_kids_room_list" model="ir.ui.view">
+        <field name="name">kids.room.list</field>
+        <field name="model">kids.room</field>
+        <field name="arch" type="xml">
+            <list string="Rooms">
+                <field name="room_number"/>
+                <field name="name"/>
+                <field name="supervisor_id"/>
+                <field name="capacity"/>
+                <!-- <field name="current_checkins"/>
+                <field name="available_spots" 
+                       decoration-success="available_spots > 0" 
+                       decoration-danger="available_spots == 0"/>
+                <field name="is_full" invisible="1"/> -->
+                <field name="active" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Room Search View -->
+    <record id="view_kids_room_search" model="ir.ui.view">
+        <field name="name">kids.room.search</field>
+        <field name="model">kids.room</field>
+        <field name="arch" type="xml">
+            <search string="Search Rooms">
+                <field name="name"/>
+                <field name="room_number"/>
+                <field name="supervisor_id"/>
+                <separator/>
+                <!-- <filter string="Available Rooms" name="available" 
+                        domain="[('is_full', '=', False)]"/>
+                <filter string="Full Rooms" name="full" 
+                        domain="[('is_full', '=', True)]"/> -->
+                <separator/>
+                <filter string="Active" name="active" 
+                        domain="[('active', '=', True)]"/>
+                <filter string="Archived" name="inactive" 
+                        domain="[('active', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Supervisor" name="supervisor" 
+                            context="{'group_by': 'supervisor_id'}"/>
+                    <filter string="Capacity" name="capacity" 
+                            context="{'group_by': 'capacity'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Room Action -->
+    <record id="action_kids_room" model="ir.actions.act_window">
+        <field name="name">Rooms</field>
+        <field name="res_model">kids.room</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first room!
+            </p>
+            <p>
+                Set up rooms where children will play and assign supervisors to manage each area.
+            </p>
+        </field>
+    </record>
+</odoo>

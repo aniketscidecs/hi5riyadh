@@ -13,6 +13,8 @@ class ChildCheckin(models.Model):
     
     name = fields.Char('Check-in Number', required=True, copy=False, readonly=True, default='New')
     child_id = fields.Many2one('kids.child', string='Child', required=True, ondelete='cascade')
+    room_id = fields.Many2one('kids.room', string='Room', 
+                             help="Room where the child will be playing")
     subscription_id = fields.Many2one('kids.child.subscription', string='Subscription', required=True)
     
     # Check-in/Check-out times
@@ -62,10 +64,44 @@ class ChildCheckin(models.Model):
     
     @api.model
     def create(self, vals):
-        """Override create to generate sequence number"""
+        """Override create to generate sequence number and validate room capacity"""
         if vals.get('name', 'New') == 'New':
             vals['name'] = self.env['ir.sequence'].next_by_code('kids.child.checkin') or 'New'
+        
+        # Validate room capacity before creating check-in (only if room is specified)
+        if vals.get('room_id'):
+            self._validate_room_capacity(vals['room_id'])
+        
         return super().create(vals)
+    
+    def write(self, vals):
+        """Override write to validate room capacity when room is changed"""
+        if vals.get('room_id'):
+            for record in self:
+                # Only validate if room is being changed and record is being checked in
+                if record.room_id.id != vals['room_id'] and record.state in ['pending_otp', 'checked_in']:
+                    self._validate_room_capacity(vals['room_id'], exclude_record=record)
+        
+        return super().write(vals)
+    
+    def _validate_room_capacity(self, room_id, exclude_record=None):
+        """Validate that room has available capacity"""
+        room = self.env['kids.room'].browse(room_id)
+        if not room.exists():
+            raise ValidationError("Selected room does not exist.")
+        
+        # Count current check-ins in this room (excluding the current record if updating)
+        domain = [('room_id', '=', room_id), ('state', '=', 'checked_in')]
+        if exclude_record:
+            domain.append(('id', '!=', exclude_record.id))
+        
+        current_checkins = self.search_count(domain)
+        
+        if current_checkins >= room.capacity:
+            raise ValidationError(
+                f"Room '{room.name}' is at full capacity ({room.capacity} children). "
+                f"Please select a different room or wait for a child to check out."
+            )
     
     @api.depends('checkin_time', 'checkout_time')
     def _compute_duration(self):
@@ -607,7 +643,7 @@ class ChildCheckin(models.Model):
         }
     
     @api.model
-    def create_checkin_request(self, child_id):
+    def create_checkin_request(self, child_id, room_id=None):
         """Create a new check-in request and send OTP"""
         validation = self.validate_active_subscription(child_id)
         
@@ -615,10 +651,14 @@ class ChildCheckin(models.Model):
             raise ValidationError(validation['message'])
         
         # Create check-in record
-        checkin = self.create({
+        vals = {
             'child_id': child_id,
             'subscription_id': validation['subscription'].id,
-        })
+        }
+        if room_id:
+            vals['room_id'] = room_id
+            
+        checkin = self.create(vals)
         
         # Send OTP
         checkin.action_send_otp()

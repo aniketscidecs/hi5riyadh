@@ -7,6 +7,8 @@ class CheckinWizard(models.TransientModel):
     _description = 'Quick Check-in Wizard'
     
     child_id = fields.Many2one('kids.child', string='Child', required=True)
+    room_id = fields.Many2one('kids.room', string='Room', 
+                             help="Room where the child will be playing")
     
     @api.model
     def default_get(self, fields_list):
@@ -190,7 +192,7 @@ class CheckinWizard(models.TransientModel):
             }
         
         # Create check-in record and send OTP
-        checkin = self.env['kids.child.checkin'].create_checkin_request(self.child_id.id)
+        checkin = self.env['kids.child.checkin'].create_checkin_request(self.child_id.id, self.room_id.id if self.room_id else None)
         
         self.checkin_id = checkin
         self.otp_sent = True

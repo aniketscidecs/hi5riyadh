@@ -94,4 +94,12 @@
         parent="menu_kids_club_config"
         action="action_subscription_package"
         sequence="10"/>
+
+    <!-- Rooms under Configuration -->
+    <menuitem 
+        id="menu_kids_rooms"
+        name="Rooms"
+        parent="menu_kids_club_config"
+        action="action_kids_room"
+        sequence="20"/>
 </odoo>

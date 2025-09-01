@@ -10,3 +10,5 @@ access_kids_child_checkin_manager,kids.child.checkin.manager,model_kids_child_ch
 access_kids_checkin_dashboard_user,kids.checkin.dashboard.user,model_kids_checkin_dashboard,base.group_user,1,0,0,0
 access_kids_checkin_wizard_user,kids.checkin.wizard.user,model_kids_checkin_wizard,base.group_user,1,1,1,1
 access_kids_checkout_wizard_user,kids.checkout.wizard.user,model_kids_checkout_wizard,base.group_user,1,1,1,1
+access_kids_room_user,kids.room.user,model_kids_room,base.group_user,1,1,1,1
+access_kids_room_manager,kids.room.manager,model_kids_room,base.group_system,1,1,1,1
