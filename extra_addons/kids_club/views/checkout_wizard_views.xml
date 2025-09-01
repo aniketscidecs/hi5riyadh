@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Checkout Wizard Form View -->
+    <record id="view_kids_checkout_wizard_form" model="ir.ui.view">
+        <field name="name">kids.checkout.wizard.form</field>
+        <field name="model">kids.checkout.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Checkout">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Checkout</h1>
+                        <h2 invisible="current_state == 'ready'">
+                            <field name="current_state" readonly="1" widget="badge" 
+                                   decoration-warning="current_state == 'pending_otp'"
+                                   decoration-success="current_state == 'completed'"/>
+                        </h2>
+                    </div>
+                    
+                    <group>
+                        <field name="child_id" readonly="1"/>
+                        <field name="checkin_id" readonly="1" invisible="1"/>
+                    </group>
+                    
+                    <!-- Ready for Checkout -->
+                    <group string="Ready for Checkout" invisible="current_state != 'ready'">
+                        <div class="alert alert-info" role="alert">
+                            <strong>Ready to checkout:</strong> Click the button below to send checkout OTP to parent and begin checkout process.
+                        </div>
+                    </group>
+                    
+                    <!-- Checkout OTP Section -->
+                    <group string="Checkout OTP Verification" invisible="current_state != 'pending_otp'">
+                        <div class="alert alert-warning" role="alert">
+                            <strong>Checkout OTP Required:</strong> Please ask parent to provide the checkout OTP sent to their email/mobile and enter it below.
+                        </div>
+                        <field name="sent_checkout_otp_code" string="Sent Checkout OTP Code (for testing)" readonly="1" invisible="not sent_checkout_otp_code"/>
+                        <field name="checkout_otp_code" placeholder="Enter checkout OTP from parent" required="current_state == 'pending_otp'" force_save="1"/>
+                    </group>
+                    
+                    <!-- Checkout Complete -->
+                    <group string="Checkout Complete" invisible="current_state != 'completed'">
+                        <div class="alert alert-success" role="alert">
+                            <strong>✓ Checkout Complete!</strong> Child has been successfully checked out.
+                        </div>
+                    </group>
+                </sheet>
+                
+                <footer>
+                    <!-- Send Checkout OTP Button -->
+                    <button name="action_send_checkout_otp" type="object" string="Send Checkout OTP" 
+                            class="btn-primary" invisible="current_state != 'ready'"/>
+                    
+                    <!-- Verify Checkout OTP Button -->
+                    <button name="action_verify_checkout_otp" type="object" string="Complete Checkout" 
+                            class="btn-success" invisible="current_state != 'pending_otp' or not checkout_otp_code"/>
+                    
+                    <!-- Resend Checkout OTP Button -->
+                    <button name="action_resend_checkout_otp" type="object" string="Resend Checkout OTP" 
+                            class="btn-secondary" invisible="current_state != 'pending_otp'"/>
+                    
+                    <!-- Close Button -->
+                    <button string="Close" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

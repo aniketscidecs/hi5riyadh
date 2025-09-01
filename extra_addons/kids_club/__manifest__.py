@@ -33,6 +33,7 @@
         'views/subscription_package_views.xml',
         'views/child_views.xml',
         'views/checkin_views.xml',
+        'views/checkout_wizard_views.xml',
         'views/customer_views.xml',
         'views/kids_club_menus.xml',
     ],

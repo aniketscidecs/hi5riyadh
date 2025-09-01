@@ -70,10 +70,10 @@
         action="kids_club.action_kids_checkin_dashboard"
         sequence="10"/>
 
-    <!-- Quick Check-in Menu -->
+    <!-- Quick Check-in/Check-out Menu -->
     <menuitem 
         id="menu_kids_quick_checkin"
-        name="Quick Check-in"
+        name="Quick Check-in/Check-out"
         parent="menu_kids_checkin_root"
         action="kids_club.action_kids_checkin_wizard"
         sequence="20"/>

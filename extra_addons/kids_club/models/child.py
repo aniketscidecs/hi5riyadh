@@ -161,11 +161,14 @@ class Child(models.Model):
         for record in self:
             record.subscription_count = len(record.subscription_ids)
     
-    @api.depends('checkin_ids.checkout_time')
+    @api.depends('checkin_ids.checkout_time', 'checkin_ids.state')
     def _compute_checkin_status(self):
         """Compute if child is currently checked in"""
         for record in self:
-            current_checkin = record.checkin_ids.filtered(lambda c: not c.checkout_time)
+            # Find active check-in: either checked_in or pending_checkout_otp states
+            current_checkin = record.checkin_ids.filtered(
+                lambda c: not c.checkout_time and c.state in ['checked_in', 'pending_checkout_otp']
+            )
             if current_checkin:
                 record.is_checked_in = True
                 record.current_checkin_id = current_checkin[0]
@@ -222,24 +225,25 @@ class Child(models.Model):
         """Quick checkout for currently checked-in child"""
         self.ensure_one()
         
-        if not self.is_checked_in:
+        # Find active check-in (including those in checkout OTP pending state)
+        active_checkin = self.env['kids.child.checkin'].search([
+            ('child_id', '=', self.id),
+            ('state', 'in', ['checked_in', 'pending_checkout_otp'])
+        ], limit=1)
+        
+        if not active_checkin:
             raise ValidationError("Child is not currently checked in.")
         
-        # Find active check-in
-        active_checkin = self.current_checkin_id
-        if not active_checkin:
-            raise ValidationError("No active check-in found.")
-        
-        # Perform checkout
-        result = active_checkin.action_checkout()
-        
+        # Always open the checkout wizard - let the wizard handle pending OTP states internally
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Check-out Complete',
-            'res_model': 'kids.child.checkin',
-            'res_id': active_checkin.id,
+            'name': 'Checkout',
+            'res_model': 'kids.checkout.wizard',
             'view_mode': 'form',
-            'target': 'current',
+            'target': 'new',
+            'context': {
+                'default_child_id': self.id,
+            },
         }
     
     def action_view_checkins(self):
@@ -261,6 +265,8 @@ class Child(models.Model):
     def action_open_checkin_wizard(self):
         """Open quick check-in wizard for this child"""
         self.ensure_one()
+        
+        # Always open the wizard - let the wizard handle pending OTP states internally
         return {
             'name': 'Quick Check-in',
             'type': 'ir.actions.act_window',

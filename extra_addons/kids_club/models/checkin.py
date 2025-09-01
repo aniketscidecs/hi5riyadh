@@ -160,7 +160,20 @@ class ChildCheckin(models.Model):
         self.entered_otp = False
         
         # Generate new OTP and send
-        return self.action_send_otp()
+        self.action_send_otp()
+        
+        # Return action to refresh the form view
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Check-in Record',
+            'res_model': 'kids.child.checkin',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'current',
+            'context': {
+                'form_view_initial_mode': 'edit',
+            }
+        }
     
     def verify_otp_action(self):
         """Action method called by the Verify OTP button"""
@@ -268,7 +281,20 @@ class ChildCheckin(models.Model):
         self.entered_checkout_otp = False
         
         # Generate new checkout OTP and send
-        return self.action_send_checkout_otp()
+        self.action_send_checkout_otp()
+        
+        # Return action to refresh the form view
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Check-in Record',
+            'res_model': 'kids.child.checkin',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'current',
+            'context': {
+                'form_view_initial_mode': 'edit',
+            }
+        }
     
     def verify_checkout_otp_action(self):
         """Action method called by the Verify Checkout OTP button"""
@@ -414,15 +440,15 @@ class ChildCheckin(models.Model):
         if self.extra_charges <= 0:
             return
         
-        # Find income account
+        # Find income account (Odoo 17+ uses account_type instead of user_type_id)
         income_account = self.env['account.account'].search([
-            ('user_type_id.name', 'in', ['Income', 'Revenue'])
+            ('account_type', 'in', ['income', 'income_other'])
         ], limit=1)
         
         if not income_account:
             # Fallback to any receivable account
             income_account = self.env['account.account'].search([
-                ('user_type_id.name', '=', 'Receivable')
+                ('account_type', '=', 'asset_receivable')
             ], limit=1)
         
         # Create invoice

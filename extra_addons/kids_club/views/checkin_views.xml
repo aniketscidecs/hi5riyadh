@@ -59,7 +59,7 @@
                                         <strong>Check-in OTP Required:</strong> Please ask parent to provide the OTP sent to their email/mobile and enter it below.
                                     </div>
                                     <group>
-                                        <field name="entered_otp" placeholder="Enter check-in OTP from parent" invisible="otp_verified"/>
+                                        <field name="entered_otp" placeholder="Enter check-in OTP from parent" invisible="otp_verified" force_save="1"/>
                                     </group>
                                     <div class="oe_button_box">
                                         <button name="verify_otp_action" type="object" string="Verify Check-in OTP" 
@@ -92,7 +92,7 @@
                                         <strong>Check-out OTP Required:</strong> Please ask parent to provide the checkout OTP sent to their email/mobile and enter it below.
                                     </div>
                                     <group>
-                                        <field name="entered_checkout_otp" placeholder="Enter check-out OTP from parent" invisible="checkout_otp_verified"/>
+                                        <field name="entered_checkout_otp" placeholder="Enter check-out OTP from parent" invisible="checkout_otp_verified" force_save="1"/>
                                     </group>
                                     <div class="oe_button_box">
                                         <button name="verify_checkout_otp_action" type="object" string="Verify Check-out OTP" 
@@ -305,31 +305,86 @@
         <field name="name">kids.checkin.wizard.form</field>
         <field name="model">kids.checkin.wizard</field>
         <field name="arch" type="xml">
-            <form string="Quick Check-in">
+            <form string="Quick Check-in/Check-out">
                 <sheet>
                     <div class="oe_title">
-                        <h1>Quick Check-in</h1>
+                        <h1>Quick Check-in/Check-out</h1>
+                        <h2 invisible="current_state == 'new'">
+                            <field name="current_state" readonly="1" widget="badge" 
+                                   decoration-info="current_state == 'pending_otp'"
+                                   decoration-success="current_state == 'checked_in'"
+                                   decoration-warning="current_state == 'pending_checkout_otp'"
+                                   decoration-muted="current_state == 'checked_out'"/>
+                        </h2>
                     </div>
+                    
                     <group>
                         <field name="child_id" options="{'no_create': True}" required="1"/>
                         <field name="barcode_scan" placeholder="Scan child's barcode"/>
                     </group>
-                    <group string="Subscription Validation" invisible="not child_id">
+                    
+                    <group string="Subscription Validation" invisible="not child_id or current_state != 'new'">
                         <field name="subscription_id" readonly="1"/>
                         <field name="remaining_visits" readonly="1"/>
                         <field name="validation_message" readonly="1" invisible="not validation_message"/>
                     </group>
-                    <group string="OTP Verification" invisible="not child_id or validation_message">
-                        <field name="otp_sent" readonly="1"/>
-                        <field name="otp_code" required="otp_sent" readonly="not otp_sent"/>
+                    
+                    <!-- Check-in OTP Section -->
+                    <group string="Check-in OTP Verification" invisible="current_state != 'pending_otp'">
+                        <div class="alert alert-info" role="alert">
+                            <strong>Check-in OTP Required:</strong> Please ask parent to provide the OTP sent to their email/mobile and enter it below.
+                        </div>
+                        <field name="sent_otp_code" string="Sent OTP Code (for testing)" readonly="1" invisible="not sent_otp_code"/>
+                        <field name="otp_code" placeholder="Enter check-in OTP from parent" required="current_state == 'pending_otp'"/>
+                    </group>
+                    
+                    <!-- Checked In Status -->
+                    <group string="Status" invisible="current_state != 'checked_in'">
+                        <div class="alert alert-success" role="alert">
+                            <strong>✓ Child is Checked In!</strong> Ready for check-out when needed.
+                        </div>
+                    </group>
+                    
+                    <!-- Check-out OTP Section -->
+                    <group string="Check-out OTP Verification" invisible="current_state != 'pending_checkout_otp'">
+                        <div class="alert alert-warning" role="alert">
+                            <strong>Check-out OTP Required:</strong> Please ask parent to provide the checkout OTP sent to their email/mobile and enter it below.
+                        </div>
+                        <field name="sent_checkout_otp_code" string="Sent Checkout OTP Code (for testing)" readonly="1" invisible="not sent_checkout_otp_code"/>
+                        <field name="checkout_otp_code" placeholder="Enter check-out OTP from parent" required="current_state == 'pending_checkout_otp'"/>
+                    </group>
+                    
+                    <!-- Checked Out Status -->
+                    <group string="Status" invisible="current_state != 'checked_out'">
+                        <div class="alert alert-success" role="alert">
+                            <strong>✓ Check-out Complete!</strong> Child has been successfully checked out.
+                        </div>
                     </group>
                 </sheet>
+                
                 <footer>
-                    <button name="action_send_otp" type="object" string="Send OTP" 
-                            class="btn-primary" invisible="not child_id or otp_sent"/>
-                    <button name="action_verify_checkin" type="object" string="Verify &amp; Check-in" 
-                            class="btn-success" invisible="not otp_sent or not otp_code"/>
-                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    <!-- Check-in Flow Buttons -->
+                    <button name="action_send_otp" type="object" string="Send Check-in OTP" 
+                            class="btn-primary" invisible="current_state != 'new'"/>
+                    
+                    <button name="action_verify_checkin" type="object" string="Verify Check-in OTP" 
+                            class="btn-success" invisible="current_state != 'pending_otp' or not otp_code"/>
+                    
+                    <button name="action_resend_checkin_otp" type="object" string="Resend Check-in OTP" 
+                            class="btn-secondary" invisible="current_state != 'pending_otp'"/>
+                    
+                    <!-- Check-out Flow Buttons -->
+                    <button name="action_send_checkout_otp" type="object" string="Send Check-out OTP" 
+                            class="btn-warning" invisible="current_state != 'checked_in'"/>
+                    
+                    <button name="action_verify_checkout" type="object" string="Verify Check-out OTP" 
+                            class="btn-success" invisible="current_state != 'pending_checkout_otp' or not checkout_otp_code"/>
+                    
+                    <button name="action_resend_checkout_otp" type="object" string="Resend Check-out OTP" 
+                            class="btn-secondary" invisible="current_state != 'pending_checkout_otp'"/>
+                    
+                    <!-- Common Buttons -->
+                    <button string="Close" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>
         </field>
@@ -369,7 +424,7 @@
     </record>
 
     <record id="action_kids_checkin_wizard" model="ir.actions.act_window">
-        <field name="name">Quick Check-in</field>
+        <field name="name">Quick Check-in/Check-out</field>
         <field name="res_model">kids.checkin.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
