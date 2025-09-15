@@ -7,7 +7,7 @@ services:
     ports:
       - "${ODOO_PORT}:8069"
     volumes:
-      - ./enterprise:/mnt/enterprise-addons
+      - ../central_ent/enterprise:/mnt/enterprise-addons
       - ./extra_addons:/mnt/extra-addons
       - ./odoo.conf:/etc/odoo/odoo.conf
       - hi5riyadh-odoo-data:/var/lib/odoo
