@@ -43,7 +43,10 @@ class ChildCheckin(models.Model):
     currency_id = fields.Many2one('res.currency', related='subscription_id.currency_id')
     
     # Live timer display with seconds
-    live_timer = fields.Char('Live Timer', compute='_compute_live_timer')
+    live_timer = fields.Char('Time', compute='_compute_live_timer')
+    
+    # Total allowed time for JavaScript access
+    allowed_minutes = fields.Integer('Allowed Minutes', compute='_compute_allowed_minutes')
     
     # Payment confirmation
     payment_confirmed = fields.Boolean('Payment Confirmed', default=False)
@@ -117,38 +120,63 @@ class ChildCheckin(models.Model):
             else:
                 record.duration_minutes = 0
     
-    @api.depends('checkin_time', 'checkout_time', 'state')
+    @api.depends('checkin_time', 'checkout_time', 'state', 'allowed_minutes')
     def _compute_live_timer(self):
-        """Compute live timer display with hours, minutes, and seconds"""
+        """Compute live timer display - countdown for allowed time, positive for extra time"""
         for record in self:
             if record.state == 'checked_in' and record.checkin_time and not record.checkout_time:
                 # Calculate current duration for active check-ins
                 delta = fields.Datetime.now() - record.checkin_time
                 total_seconds = int(delta.total_seconds())
                 
-                hours = total_seconds // 3600
-                minutes = (total_seconds % 3600) // 60
-                seconds = total_seconds % 60
+                # Use the computed allowed_minutes field
+                allowed_seconds = record.allowed_minutes * 60
+                # Debug logging
+                if record.child_id:
+                    print(f"DEBUG live_timer for {record.child_id.name}: allowed_minutes={record.allowed_minutes}, allowed_seconds={allowed_seconds}")
                 
-                if hours > 0:
-                    record.live_timer = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                if total_seconds <= allowed_seconds:
+                    # Show countdown (remaining free time)
+                    remaining_seconds = allowed_seconds - total_seconds
+                    hours = remaining_seconds // 3600
+                    minutes = (remaining_seconds % 3600) // 60
+                    seconds = remaining_seconds % 60
+                    record.live_timer = f"-{hours:02d}:{minutes:02d}:{seconds:02d}"
                 else:
-                    record.live_timer = f"{minutes:02d}:{seconds:02d}"
+                    # Show extra time (positive)
+                    extra_seconds = total_seconds - allowed_seconds
+                    hours = extra_seconds // 3600
+                    minutes = (extra_seconds % 3600) // 60
+                    seconds = extra_seconds % 60
+                    record.live_timer = f"+{hours:02d}:{minutes:02d}:{seconds:02d}"
+                    
             elif record.checkout_time:
-                # For completed check-ins, show final duration
+                # For completed check-ins, show final duration with +/- format
                 delta = record.checkout_time - record.checkin_time
                 total_seconds = int(delta.total_seconds())
                 
-                hours = total_seconds // 3600
-                minutes = (total_seconds % 3600) // 60
-                seconds = total_seconds % 60
+                # Use the computed allowed_minutes field
+                allowed_seconds = record.allowed_minutes * 60
+                # Debug logging
+                if record.child_id:
+                    print(f"🔍 DEBUG live_timer for {record.child_id.name}: allowed_minutes={record.allowed_minutes}, allowed_seconds={allowed_seconds}")
                 
-                if hours > 0:
-                    record.live_timer = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                if total_seconds <= allowed_seconds:
+                    # Show as negative (used less than allowed)
+                    remaining_seconds = allowed_seconds - total_seconds
+                    hours = remaining_seconds // 3600
+                    minutes = (remaining_seconds % 3600) // 60
+                    seconds = remaining_seconds % 60
+                    record.live_timer = f"-{hours:02d}:{minutes:02d}:{seconds:02d}"
                 else:
-                    record.live_timer = f"{minutes:02d}:{seconds:02d}"
+                    # Show extra time (positive)
+                    extra_seconds = total_seconds - allowed_seconds
+                    hours = extra_seconds // 3600
+                    minutes = (extra_seconds % 3600) // 60
+                    seconds = extra_seconds % 60
+                    record.live_timer = f"+{hours:02d}:{minutes:02d}:{seconds:02d}"
             else:
-                record.live_timer = "00:00"
+                record.live_timer = "00:00:00"
     
     @api.depends('duration_minutes', 'subscription_id')
     def _compute_time_usage(self):
@@ -163,13 +191,22 @@ class ChildCheckin(models.Model):
             daily_free_minutes = 0
             margin_minutes = 0
             
+            # Check multiple packages first
             if record.subscription_id.package_ids:
                 # For multiple packages, use maximum daily free minutes
-                daily_free_minutes = max(record.subscription_id.package_ids.mapped('daily_free_minutes') or [0])
-                margin_minutes = max(record.subscription_id.package_ids.mapped('margin_minutes') or [0])
+                package_daily_minutes = record.subscription_id.package_ids.mapped('daily_free_minutes')
+                package_margin_minutes = record.subscription_id.package_ids.mapped('margin_minutes')
+                
+                # Only use max if we have values, otherwise keep 0
+                if package_daily_minutes:
+                    daily_free_minutes = max(package_daily_minutes)
+                if package_margin_minutes:
+                    margin_minutes = max(package_margin_minutes)
+                    
+            # Check single package if no multiple packages
             elif record.subscription_id.package_id:
-                daily_free_minutes = record.subscription_id.package_id.daily_free_minutes
-                margin_minutes = record.subscription_id.package_id.margin_minutes
+                daily_free_minutes = record.subscription_id.package_id.daily_free_minutes or 0
+                margin_minutes = record.subscription_id.package_id.margin_minutes or 0
             
             total_free_time = daily_free_minutes + margin_minutes
             
@@ -179,6 +216,61 @@ class ChildCheckin(models.Model):
             else:
                 record.free_minutes_used = total_free_time
                 record.extra_minutes = record.duration_minutes - total_free_time
+    
+    @api.depends('subscription_id')
+    def _compute_allowed_minutes(self):
+        """Compute total allowed minutes (daily_free_minutes + margin_minutes) for JavaScript access"""
+        for record in self:
+            if not record.subscription_id:
+                record.allowed_minutes = 0
+                continue
+            
+            # Get daily free minutes from packages
+            daily_free_minutes = 0
+            margin_minutes = 0
+            
+            # Check multiple packages first
+            if record.subscription_id.package_ids:
+                # For multiple packages, use maximum daily free minutes
+                package_daily_minutes = record.subscription_id.package_ids.mapped('daily_free_minutes')
+                package_margin_minutes = record.subscription_id.package_ids.mapped('margin_minutes')
+                
+                # Only use max if we have values, otherwise keep 0
+                if package_daily_minutes:
+                    daily_free_minutes = max(package_daily_minutes)
+                if package_margin_minutes:
+                    margin_minutes = max(package_margin_minutes)
+                    
+            # Check single package if no multiple packages
+            elif record.subscription_id.package_id:
+                daily_free_minutes = record.subscription_id.package_id.daily_free_minutes or 0
+                margin_minutes = record.subscription_id.package_id.margin_minutes or 0
+            
+            record.allowed_minutes = daily_free_minutes + margin_minutes
+            # Enhanced debug logging
+            if record.child_id:
+                import logging
+                _logger = logging.getLogger(__name__)
+                
+                debug_msg = f"DEBUG allowed_minutes for {record.child_id.name}:\n"
+                debug_msg += f"   - Subscription ID: {record.subscription_id.id}\n"
+                debug_msg += f"   - Package IDs: {record.subscription_id.package_ids.ids if record.subscription_id.package_ids else 'None'}\n"
+                debug_msg += f"   - Single Package ID: {record.subscription_id.package_id.id if record.subscription_id.package_id else 'None'}\n"
+                
+                if record.subscription_id.package_ids:
+                    debug_msg += f"   - Multiple packages found: {len(record.subscription_id.package_ids)}\n"
+                    for pkg in record.subscription_id.package_ids:
+                        debug_msg += f"     * Package '{pkg.name}': daily_free={pkg.daily_free_minutes}, margin={pkg.margin_minutes}\n"
+                elif record.subscription_id.package_id:
+                    pkg = record.subscription_id.package_id
+                    debug_msg += f"   - Single package '{pkg.name}': daily_free={pkg.daily_free_minutes}, margin={pkg.margin_minutes}\n"
+                
+                debug_msg += f"   - Computed Daily Free Minutes: {daily_free_minutes}\n"
+                debug_msg += f"   - Computed Margin Minutes: {margin_minutes}\n"
+                debug_msg += f"   - Total Allowed: {record.allowed_minutes}"
+                
+                print(debug_msg)
+                _logger.info(debug_msg)
     
     @api.depends('extra_minutes', 'subscription_id')
     def _compute_extra_charges(self):

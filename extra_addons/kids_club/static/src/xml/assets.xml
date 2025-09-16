@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- Assets will be loaded via manifest dependencies -->
+        <!-- Dashboard Timer Assets -->
+        <template id="assets_backend" name="kids_club assets" inherit_id="web.assets_backend">
+            <xpath expr="." position="inside">
+                <script type="text/javascript" src="/kids_club/static/src/js/simple_dashboard_timer.js"/>
+            </xpath>
+        </template>
     </data>
 </odoo>

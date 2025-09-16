@@ -29,6 +29,7 @@
                     rows.forEach(function(row) {
                         const checkinCell = row.querySelector('td[name="checkin_time"]');
                         const timerCell = row.querySelector('td[name="live_timer"]');
+                        const extraMinutesCell = row.querySelector('td[name="extra_minutes"]');
                         
                         if (checkinCell && timerCell) {
                             const checkinText = checkinCell.textContent.trim();
@@ -37,23 +38,38 @@
                                 if (checkinTime) {
                                     const now = new Date();
                                     const duration = now - checkinTime;
-                                    const formatted = formatDurationWithMs(duration);
+                                    
+                                    // Calculate countdown/positive format
+                                    const formatted = calculateCountdownFormat(duration);
                                     
                                     // Update timer display
                                     timerCell.textContent = formatted;
                                     
-                                    // Apply color coding
-                                    const minutes = duration / (1000 * 60);
+                                    // Apply styling
                                     timerCell.style.fontFamily = 'monospace';
                                     timerCell.style.fontWeight = 'bold';
+                                    timerCell.style.textAlign = 'center';
+                                    timerCell.style.minWidth = '120px';
                                     
-                                    if (minutes < 5) {
+                                    // Color coding based on timer format
+                                    if (formatted.startsWith('-')) {
+                                        // Countdown time (still in free time)
                                         timerCell.style.color = '#28a745'; // Green
-                                    } else if (minutes < 10) {
-                                        timerCell.style.color = '#ffc107'; // Yellow
+                                        timerCell.style.animation = 'none';
+                                    } else if (formatted.startsWith('+')) {
+                                        // Extra time
+                                        const extraMinutes = extraMinutesCell ? parseInt(extraMinutesCell.textContent.trim()) || 0 : 0;
+                                        if (extraMinutes <= 10) {
+                                            timerCell.style.color = '#ffc107'; // Yellow
+                                            timerCell.style.animation = 'none';
+                                        } else {
+                                            timerCell.style.color = '#dc3545'; // Red
+                                            timerCell.style.animation = 'pulse 1s infinite';
+                                        }
                                     } else {
-                                        timerCell.style.color = '#dc3545'; // Red
-                                        timerCell.style.animation = 'pulse 1s infinite';
+                                        // Default styling
+                                        timerCell.style.color = '#6c757d'; // Gray
+                                        timerCell.style.animation = 'none';
                                     }
                                 }
                             }
@@ -79,6 +95,51 @@
                     } catch (e) {
                         return null;
                     }
+                }
+                
+                function calculateCountdownFormat(durationMs) {
+                    // Default allowed time: 60 minutes (can be made dynamic later)
+                    const allowedMinutes = 60; // This should ideally come from subscription data
+                    const allowedMs = allowedMinutes * 60 * 1000;
+                    
+                    const totalSec = Math.floor(durationMs / 1000);
+                    const allowedSec = Math.floor(allowedMs / 1000);
+                    
+                    let displaySec, prefix;
+                    
+                    if (totalSec <= allowedSec) {
+                        // Still within allowed time - show countdown
+                        displaySec = allowedSec - totalSec;
+                        prefix = '-';
+                    } else {
+                        // Over allowed time - show extra time
+                        displaySec = totalSec - allowedSec;
+                        prefix = '+';
+                    }
+                    
+                    const hours = Math.floor(displaySec / 3600);
+                    const minutes = Math.floor((displaySec % 3600) / 60);
+                    const seconds = displaySec % 60;
+                    
+                    return prefix + hours.toString().padStart(2, '0') + ':' + 
+                           minutes.toString().padStart(2, '0') + ':' + 
+                           seconds.toString().padStart(2, '0');
+                }
+                
+                function formatTimeWithSign(ms, isOvertime) {
+                    const totalSec = Math.floor(ms / 1000);
+                    
+                    const hours = Math.floor(totalSec / 3600);
+                    const minutes = Math.floor((totalSec % 3600) / 60);
+                    const seconds = totalSec % 60;
+                    
+                    const timeStr = hours.toString().padStart(2, '0') + ':' + 
+                                   minutes.toString().padStart(2, '0') + ':' + 
+                                   seconds.toString().padStart(2, '0');
+                    
+                    // Note: The actual +/- logic is handled by the Python backend
+                    // This function just formats the display consistently
+                    return timeStr;
                 }
                 
                 function formatDurationWithMs(ms) {

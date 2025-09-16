@@ -1,11 +1,8 @@
-// Simple Kids Dashboard Timer - No complex Odoo dependencies
-// This will work immediately when loaded
-
-console.log('🚀 Kids Dashboard Timer Loading...');
-
-// Start timer immediately when script loads
+// Simple Dashboard Timer - Loads automatically
 (function() {
     'use strict';
+    
+    console.log('🚀 Kids Dashboard Timer Loading...');
     
     let timerInterval = null;
     
@@ -15,35 +12,37 @@ console.log('🚀 Kids Dashboard Timer Loading...');
             clearInterval(timerInterval);
         }
         
-        console.log('✅ Kids Timer Started - Updating every 100ms');
+        console.log('✅ Kids Timer Started - Countdown/Positive Format');
+        
+        // Update every second
+        timerInterval = setInterval(function() {
+            updateAllTimers();
+        }, 1000);
         
         // Update immediately first
         updateAllTimers();
-        
-        // Then update every 100ms for smooth millisecond display
-        timerInterval = setInterval(function() {
-            updateAllTimers();
-        }, 100);
     }
     
     function updateAllTimers() {
-        // Find all timer cells in the dashboard
-        const timerCells = document.querySelectorAll('td[name="live_timer"]');
-        
-        if (timerCells.length === 0) {
-            console.log('⚠️ No timer cells found');
+        // Only run on dashboard pages
+        if (!window.location.href.includes('dashboard') && !document.querySelector('td[name="live_timer"]')) {
             return;
         }
         
-        console.log(` Updating ${timerCells.length} timer(s)`);
+        const timerCells = document.querySelectorAll('td[name="live_timer"]');
+        
+        if (timerCells.length === 0) {
+            return;
+        }
         
         timerCells.forEach(function(timerCell) {
-            // Find the corresponding check-in time cell in the same row
             const row = timerCell.closest('tr');
             const checkinCell = row ? row.querySelector('td[name="checkin_time"]') : null;
             const stateField = row ? row.querySelector('td[name="state"]') : null;
+            const extraMinutesCell = row ? row.querySelector('td[name="extra_minutes"]') : null;
             const allowedMinutesCell = row ? row.querySelector('td[name="allowed_minutes"]') : null;
-            // Only update timer if child is actually checked in (using state field)
+            
+            // Only update timer if child is checked in
             const isCheckedIn = stateField && stateField.textContent.trim() === 'Checked In';
             
             if (checkinCell && isCheckedIn) {
@@ -56,7 +55,7 @@ console.log('🚀 Kids Dashboard Timer Loading...');
                         
                         // Get dynamic allowed minutes from the row
                         const allowedMinutesText = allowedMinutesCell?.textContent?.trim();
-                        let allowedMinutes = 1; // Default fallback
+                        let allowedMinutes = 1; // Default to 1 minute instead of 60
                         
                         if (allowedMinutesCell && allowedMinutesText && !isNaN(parseInt(allowedMinutesText))) {
                             allowedMinutes = parseInt(allowedMinutesText);
@@ -74,21 +73,22 @@ console.log('🚀 Kids Dashboard Timer Loading...');
                         timerCell.style.fontFamily = 'monospace';
                         timerCell.style.fontWeight = 'bold';
                         timerCell.style.textAlign = 'center';
+                        timerCell.style.minWidth = '120px';
                         
-                        // Color coding based on duration
+                        // Color coding
                         if (formatted.startsWith('-')) {
                             // Countdown time (still in free time)
                             timerCell.style.color = '#28a745'; // Green
+                            timerCell.style.animation = 'none';
                         } else if (formatted.startsWith('+')) {
                             // Extra time
-                            const extraTimeCell = row ? row.querySelector('td[name="extra_minutes"]') : null;
-                            if (extraTimeCell) {
-                                const extraMinutes = parseInt(extraTimeCell.textContent.trim()) || 0;
-                                if (extraMinutes <= 10) {
-                                    timerCell.style.color = '#ffc107'; // Yellow
-                                } else {
-                                    timerCell.style.color = '#dc3545'; // Red
-                                }
+                            const extraMinutes = extraMinutesCell ? parseInt(extraMinutesCell.textContent.trim()) || 0 : 0;
+                            if (extraMinutes <= 10) {
+                                timerCell.style.color = '#ffc107'; // Yellow
+                                timerCell.style.animation = 'none';
+                            } else {
+                                timerCell.style.color = '#dc3545'; // Red
+                                timerCell.style.animation = 'pulse 1s infinite';
                             }
                         }
                     }
@@ -145,59 +145,39 @@ console.log('🚀 Kids Dashboard Timer Loading...');
                seconds.toString().padStart(2, '0');
     }
     
-    function updateExtraTimeField(row, duration) {
-        const extraTimeCell = row ? row.querySelector('td[name="extra_minutes"]') : null;
-        
-        if (extraTimeCell) {
-            // Calculate extra minutes (assuming 1 minute = 60000ms daily free time + 0 margin)
-            // You can adjust these values based on the package settings
-            const dailyFreeMinutes = 1; // Default from package
-            const marginMinutes = 0;    // Default from package
-            
-            const totalMinutes = Math.floor(duration / (1000 * 60));
-            const freeAllowance = dailyFreeMinutes + marginMinutes;
-            const extraMinutes = Math.max(0, totalMinutes - freeAllowance);
-            
-            // Update the extra time display
-            extraTimeCell.textContent = extraMinutes;
-            
-            // Color coding for extra time
-            if (extraMinutes > 0) {
-                extraTimeCell.style.color = '#dc3545'; // Red for overtime
-                extraTimeCell.style.fontWeight = 'bold';
-            } else {
-                extraTimeCell.style.color = '#28a745'; // Green for within limits
-                extraTimeCell.style.fontWeight = 'normal';
-            }
-        }
-    }
-    
     // Initialize timer when DOM is ready
     function initTimer() {
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', startTimer);
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(startTimer, 1000);
+            });
         } else {
-            // DOM is already ready, start immediately
-            setTimeout(startTimer, 500);
+            setTimeout(startTimer, 1000);
         }
     }
     
-    // Start the initialization
+    // Start the timer
     initTimer();
     
-    // Also restart timer when page changes (for SPA navigation)
+    // Also restart on page navigation
     if (window.addEventListener) {
         window.addEventListener('hashchange', function() {
             setTimeout(startTimer, 1000);
         });
     }
     
-    console.log('📊 Kids Dashboard Timer Script Loaded');
+    // Add CSS for pulse animation
+    if (!document.getElementById('dashboard-timer-styles')) {
+        const style = document.createElement('style');
+        style.id = 'dashboard-timer-styles';
+        style.textContent = `
+            @keyframes pulse {
+                0% { opacity: 1; transform: scale(1); }
+                50% { opacity: 0.7; transform: scale(1.05); }
+                100% { opacity: 1; transform: scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
     
 })();
-
-// Also expose a global function to manually start the timer
-window.startKidsTimer = function() {
-    console.log(' Manually starting Kids Timer...');
-    startTimer();
-};

@@ -227,12 +227,12 @@
                 <field name="child_id" string="Child Name"/>
                 <field name="checkin_time" string="Check-in Time"/>
                 <field name="state" string="Status"/>
-                <field name="live_timer" string="Live Timer" widget="char" 
+                <field name="live_timer" string="Time" widget="char" 
                        decoration-success="extra_minutes == 0" 
                        decoration-warning="extra_minutes > 0"
                        options="{'js_class': 'live_timer_widget'}"/>
-                <field name="extra_minutes" string="Extra Time" 
-                       decoration-warning="extra_minutes > 0"/>
+                <!-- Hidden field for JavaScript to access package time configuration -->
+                <field name="allowed_minutes" string="Allowed Minutes"/>
                 <button name="action_dashboard_checkout" type="object" string="Check Out" 
                         class="btn-success" icon="fa-sign-out" 
                         invisible="state != 'checked_in'"/>

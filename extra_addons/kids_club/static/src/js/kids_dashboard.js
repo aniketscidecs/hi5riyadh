@@ -99,7 +99,7 @@ export class KidsDashboardController extends KanbanController {
                 if (progressBar) {
                     const freeMinutes = parseInt(progressBar.dataset.freeMinutes) || 0;
                     const extraMinutes = parseInt(progressBar.dataset.extraMinutes) || 0;
-                    const totalAllowed = freeMinutes + 60; // Assume 60 min base allowance
+                    const totalAllowed = freeMinutes + 1; // Use 1 minute base allowance, should be dynamic
                     const progressPercent = Math.min((diffMinutes / totalAllowed) * 100, 100);
                     progressBar.style.width = `${progressPercent}%`;
                     
