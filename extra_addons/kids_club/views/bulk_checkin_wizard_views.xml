@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Bulk Check-in Wizard Form View -->
+    <record id="view_bulk_checkin_wizard_form" model="ir.ui.view">
+        <field name="name">kids.bulk.checkin.wizard.form</field>
+        <field name="model">kids.bulk.checkin.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Bulk Check-in">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="child_ids" invisible="1"/>
+                            <span>Bulk Check-in for <field name="child_ids" widget="many2many_tags" readonly="1" options="{'no_create': True, 'no_open': True}"/> Children</span>
+                        </h1>
+                    </div>
+                    
+                    <group>
+                        <group>
+                            <field name="checkin_time" widget="datetime"/>
+                        </group>
+                        <group>
+                            <field name="notes" placeholder="Optional notes for all check-ins..."/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Children to Check-in">
+                            <field name="child_ids" widget="many2many" options="{'no_create': True}">
+                                <list string="Selected Children">
+                                    <field name="image_small" widget="image" options="{'size': [40, 40]}"/>
+                                    <field name="name"/>
+                                    <field name="parent_id"/>
+                                    <field name="age"/>
+                                    <field name="current_subscription_id"/>
+                                    <field name="is_checked_in" invisible="1"/>
+                                    <field name="active" invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                
+                <footer>
+                    <button name="action_bulk_checkin" string="Check-in All Selected" 
+                            type="object" class="btn-primary" 
+                            icon="fa-sign-in"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

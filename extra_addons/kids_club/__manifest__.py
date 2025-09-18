@@ -35,6 +35,7 @@
         'views/child_views.xml',
         'views/checkin_views.xml',
         'views/checkout_wizard_views.xml',
+        'views/bulk_checkin_wizard_views.xml',
         'views/customer_views.xml',
         'views/room_views.xml',
         'views/kids_club_menus.xml',

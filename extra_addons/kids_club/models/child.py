@@ -277,6 +277,40 @@ class Child(models.Model):
                 'default_child_id': self.id,
             },
         }
+    
+    def action_bulk_checkin(self):
+        """Bulk check-in for multiple selected children"""
+        # Filter only children that can be checked in (not already checked in and active)
+        eligible_children = self.filtered(lambda c: not c.is_checked_in and c.active)
+        
+        if not eligible_children:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'No Children Available',
+                    'message': 'No eligible children selected for check-in. Children must be active and not already checked in.',
+                    'type': 'warning',
+                    'sticky': False,
+                }
+            }
+        
+        # If only one child, open individual check-in wizard
+        if len(eligible_children) == 1:
+            return eligible_children.action_open_checkin_wizard()
+        
+        # For multiple children, open bulk check-in wizard
+        return {
+            'name': 'Bulk Check-in',
+            'type': 'ir.actions.act_window',
+            'res_model': 'kids.bulk.checkin.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_child_ids': [(6, 0, eligible_children.ids)],
+                'active_ids': eligible_children.ids,
+            },
+        }
 
 
 class ChildSubscription(models.Model):

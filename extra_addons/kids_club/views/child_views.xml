@@ -113,7 +113,14 @@
         <field name="name">kids.child.list</field>
         <field name="model">kids.child</field>
         <field name="arch" type="xml">
-            <list string="Children">
+            <list string="Children" multi_edit="1">
+                <header>
+                    <button name="action_bulk_checkin" type="object" 
+                            string="Check-in Selected" 
+                            class="btn-primary" 
+                            icon="fa-sign-in"
+                            help="Check-in all selected children at once"/>
+                </header>
                 <field name="image_small" widget="image" options="{'size': [40, 40]}"/>
                 <field name="name"/>
                 <field name="parent_id"/>
@@ -122,7 +129,18 @@
                 <field name="barcode_id"/>
                 <field name="registration_date"/>
                 <field name="current_subscription_id"/>
+                <field name="is_checked_in" invisible="1"/>
                 <field name="active"/>
+                <button name="action_open_checkin_wizard" type="object" 
+                        string="Check-in" 
+                        class="btn-primary" 
+                        icon="fa-sign-in"
+                        invisible="is_checked_in or not active"/>
+                <button name="action_quick_checkout" type="object" 
+                        string="Check-out" 
+                        class="btn-warning" 
+                        icon="fa-sign-out"
+                        invisible="not is_checked_in"/>
             </list>
         </field>
     </record>

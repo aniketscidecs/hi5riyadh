@@ -53,6 +53,69 @@ class ResPartner(models.Model):
             'target': 'current',
         }
     
+    def action_view_subscriptions(self):
+        """Action to view subscriptions for this parent's children"""
+        self.ensure_one()
+        subscription_ids = []
+        for child in self.children_ids:
+            subscription_ids.extend(child.subscription_ids.ids)
+        
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Subscriptions for {self.name}',
+            'res_model': 'kids.child.subscription',
+            'view_mode': 'tree,form',
+            'domain': [('id', 'in', subscription_ids)],
+            'target': 'current',
+        }
+    
+    def action_quick_checkin(self):
+        """Quick check-in action for parent's children"""
+        self.ensure_one()
+        
+        # Get active children (not already checked in)
+        active_children = self.children_ids.filtered(lambda c: not c.is_checked_in and c.active)
+        
+        if not active_children:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'No Children Available',
+                    'message': 'No children available for check-in. They may already be checked in or inactive.',
+                    'type': 'warning',
+                }
+            }
+        
+        if len(active_children) == 1:
+            # If only one child, directly check them in
+            child = active_children[0]
+            return {
+                'type': 'ir.actions.act_window',
+                'name': f'Check-in {child.name}',
+                'res_model': 'kids.child.checkin',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {
+                    'default_child_id': child.id,
+                    'default_parent_id': self.id,
+                },
+            }
+        else:
+            # If multiple children, show selection
+            return {
+                'type': 'ir.actions.act_window',
+                'name': f'Select Child for Check-in',
+                'res_model': 'kids.child',
+                'view_mode': 'list',
+                'domain': [('id', 'in', active_children.ids)],
+                'target': 'new',
+                'context': {
+                    'default_parent_id': self.id,
+                    'quick_checkin_mode': True,
+                },
+            }
+    
     @api.model
     def create(self, vals):
         """Override create to set is_kids_club_parent if children are added"""
