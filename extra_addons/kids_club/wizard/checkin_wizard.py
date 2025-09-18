@@ -340,3 +340,53 @@ class CheckinWizard(models.TransientModel):
             'target': 'new',
             'context': self.env.context,
         }
+
+    def action_direct_checkin(self):
+        """Direct check-in without OTP verification"""
+        self.ensure_one()
+        
+        if not self.child_id:
+            raise ValidationError("Please select a child first.")
+        
+        # Check if child is already checked in
+        existing_checkin = self.env['kids.child.checkin'].search([
+            ('child_id', '=', self.child_id.id),
+            ('state', 'in', ['checked_in', 'pending_checkout_otp'])
+        ], limit=1)
+        
+        if existing_checkin:
+            raise ValidationError(f"{self.child_id.name} is already checked in.")
+        
+        # Validate subscription
+        if not self.subscription_id or not self.subscription_id.is_active:
+            raise ValidationError("Child must have an active subscription to check in.")
+        
+        if self.remaining_visits <= 0:
+            raise ValidationError("No remaining visits available for this subscription.")
+        
+        # Create check-in record directly without OTP
+        checkin_vals = {
+            'child_id': self.child_id.id,
+            'subscription_id': self.subscription_id.id,
+            'room_id': self.room_id.id if self.room_id else False,
+            'checkin_time': fields.Datetime.now(),
+            'state': 'checked_in',  # Direct check-in without OTP
+            'notes': f'Direct check-in via wizard{" in " + self.room_id.name if self.room_id else ""}',
+        }
+        
+        checkin = self.env['kids.child.checkin'].create(checkin_vals)
+        
+        # Update subscription visits
+        self.subscription_id.visits_used += 1
+        
+        # Show success message and close wizard
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Check-in Successful',
+                'message': f'{self.child_id.name} has been checked in successfully{" to " + self.room_id.name if self.room_id else ""}.\nRemaining visits: {self.subscription_id.remaining_visits}',
+                'type': 'success',
+                'sticky': False,
+            }
+        }

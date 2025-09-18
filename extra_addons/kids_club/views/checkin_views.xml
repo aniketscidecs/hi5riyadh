@@ -307,8 +307,11 @@
                 
                 <footer>
                     <!-- Check-in Flow Buttons -->
-                    <button name="action_send_otp" type="object" string="Send Check-in OTP" 
+                    <button name="action_direct_checkin" type="object" string="Direct Check-in" 
                             class="btn-primary" invisible="current_state != 'new'"/>
+                    
+                    <button name="action_send_otp" type="object" string="Send Check-in OTP" 
+                            class="btn-secondary" invisible="current_state != 'new'"/>
                     
                     <button name="action_verify_checkin" type="object" string="Verify Check-in OTP" 
                             class="btn-success" invisible="current_state != 'pending_otp' or not otp_code"/>
