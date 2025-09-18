@@ -166,10 +166,9 @@
                                                     <t t-else="">Children</t>
                                                 </strong>
                                             </div>
-                                            <div>
+                                            <div class="btn-group" role="group">
                                                 <button name="action_view_children" type="object" 
                                                         class="btn btn-xs btn-outline-primary" 
-                                                        style="margin-right: 8px;" 
                                                         title="View Children">
                                                     <i class="fa fa-eye"/>
                                                 </button>
@@ -177,6 +176,11 @@
                                                         class="btn btn-xs btn-outline-success" 
                                                         title="Quick Check-in">
                                                     <i class="fa fa-sign-in"/>
+                                                </button>
+                                                <button name="action_quick_subscription" type="object" 
+                                                        class="btn btn-xs btn-outline-warning" 
+                                                        title="Quick Subscription">
+                                                    <i class="fa fa-calendar-plus-o"/>
                                                 </button>
                                             </div>
                                         </div>

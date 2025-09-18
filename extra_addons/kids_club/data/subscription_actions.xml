@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Server Action: Bulk Confirm Subscriptions -->
+    <record id="action_bulk_confirm_subscriptions" model="ir.actions.server">
+        <field name="name">Bulk Confirm Subscriptions</field>
+        <field name="model_id" ref="model_kids_child_subscription"/>
+        <field name="binding_model_id" ref="model_kids_child_subscription"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+if records:
+    action = model.action_bulk_confirm(records.ids)
+    if action:
+        action = action
+        </field>
+    </record>
+
+    <!-- Server Action: Bulk Create POS Orders -->
+    <record id="action_bulk_create_pos_orders" model="ir.actions.server">
+        <field name="name">Bulk Create POS Orders</field>
+        <field name="model_id" ref="model_kids_child_subscription"/>
+        <field name="binding_model_id" ref="model_kids_child_subscription"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+if records:
+    action = model.action_bulk_create_pos_orders(records.ids)
+    if action:
+        action = action
+        </field>
+    </record>
+</odoo>

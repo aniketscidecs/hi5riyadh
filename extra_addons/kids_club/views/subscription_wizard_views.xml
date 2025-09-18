@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Subscription Wizard Form View -->
+    <record id="view_subscription_wizard_form" model="ir.ui.view">
+        <field name="name">kids.subscription.wizard.form</field>
+        <field name="model">kids.subscription.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Create Subscriptions">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="parent_id" readonly="1" options="{'no_create': True, 'no_open': True}"/>
+                        </h1>
+                        <h2>Create Subscriptions for Children</h2>
+                    </div>
+                    
+                    <group>
+                        <group string="Children">
+                            <field name="child_ids" widget="many2many_checkboxes" 
+                                   options="{'no_create': True}" nolabel="1"/>
+                        </group>
+                        <group string="Packages">
+                            <field name="package_ids" widget="many2many_checkboxes" 
+                                   options="{'no_create': True}" nolabel="1"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Options">
+                        <group>
+                            <field name="confirm_subscriptions"/>
+                            <field name="create_pos_orders" invisible="not confirm_subscriptions"/>
+                        </group>
+                        <group string="Summary">
+                            <field name="total_children" readonly="1"/>
+                            <field name="total_packages" readonly="1"/>
+                            <field name="total_amount" widget="monetary" readonly="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    
+                    <div class="alert alert-info" role="alert" invisible="not child_ids or not package_ids">
+                        <strong>Summary:</strong> 
+                        This will create subscriptions for <field name="total_children" readonly="1"/> children 
+                        with <field name="total_packages" readonly="1"/> packages each, 
+                        with a total value of <field name="total_amount" widget="monetary" readonly="1"/>.
+                    </div>
+                    
+                    <div class="alert alert-warning" role="alert" invisible="child_ids and package_ids">
+                        <strong>Please select:</strong> Choose children and packages to create subscriptions.
+                    </div>
+                </sheet>
+                <footer>
+                    <button name="action_create_subscriptions" type="object" 
+                            string="Create Subscriptions" class="btn-primary"
+                            invisible="not child_ids or not package_ids"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

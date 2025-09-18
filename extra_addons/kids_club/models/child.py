@@ -629,7 +629,182 @@ class ChildSubscription(models.Model):
         """Cancel the subscription"""
         for record in self:
             record.state = 'cancelled'
-        return True
+    
+    @api.model
+    def action_bulk_confirm(self, subscription_ids):
+        """Bulk confirm multiple subscriptions"""
+        subscriptions = self.browse(subscription_ids)
+        draft_subscriptions = subscriptions.filtered(lambda s: s.state == 'draft')
+        
+        if not draft_subscriptions:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'No Draft Subscriptions',
+                    'message': 'No draft subscriptions found to confirm.',
+                    'type': 'warning',
+                }
+            }
+        
+        # Confirm all draft subscriptions
+        for subscription in draft_subscriptions:
+            subscription.action_confirm()
+        
+        message = (
+            f"Successfully confirmed {len(draft_subscriptions)} subscriptions!\n\n"
+            f"Confirmed subscriptions: {', '.join(draft_subscriptions.mapped('name'))}"
+        )
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Bulk Confirmation Completed',
+                'message': message,
+                'type': 'success',
+                'sticky': True,
+            }
+        }
+    
+    @api.model
+    def action_bulk_create_pos_orders(self, subscription_ids):
+        """Create bulk POS orders for confirmed subscriptions"""
+        subscriptions = self.browse(subscription_ids)
+        confirmed_subscriptions = subscriptions.filtered(lambda s: s.state == 'confirmed' and not s.pos_order_id)
+        
+        if not confirmed_subscriptions:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'No Eligible Subscriptions',
+                    'message': 'No confirmed subscriptions without POS orders found.',
+                    'type': 'warning',
+                }
+            }
+        
+        # Get configured POS for subscriptions
+        subscription_pos_id = self.env['ir.config_parameter'].sudo().get_param('kids_club.subscription_pos_id')
+        if not subscription_pos_id:
+            raise ValidationError("No POS configured for subscriptions. Please configure in Kids Club > Configuration > POS Settings.")
+        
+        pos_config = self.env['pos.config'].browse(int(subscription_pos_id))
+        if not pos_config.exists():
+            raise ValidationError("Configured subscription POS no longer exists. Please update POS Settings.")
+        
+        # Group subscriptions by parent for separate POS orders
+        parent_groups = {}
+        for subscription in confirmed_subscriptions:
+            parent_id = subscription.child_id.parent_id.id
+            if parent_id not in parent_groups:
+                parent_groups[parent_id] = []
+            parent_groups[parent_id].append(subscription)
+        
+        created_orders = []
+        
+        # Create POS order for each parent group
+        for parent_id, parent_subscriptions in parent_groups.items():
+            parent = self.env['res.partner'].browse(parent_id)
+            
+            # Create POS order for this parent's subscriptions
+            pos_order = self._create_bulk_pos_order(pos_config, parent, parent_subscriptions)
+            created_orders.append(pos_order)
+        
+        message = (
+            f"Successfully created {len(created_orders)} POS orders for {len(confirmed_subscriptions)} subscriptions!\n\n"
+            f"POS Orders: {', '.join([order.pos_reference for order in created_orders])}"
+        )
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Bulk POS Orders Created',
+                'message': message,
+                'type': 'success',
+                'sticky': True,
+            }
+        }
+    
+    def _create_bulk_pos_order(self, pos_config, parent, subscriptions):
+        """Create a single POS order for multiple subscriptions of the same parent"""
+        # Ensure POS session exists
+        if not pos_config.current_session_id:
+            session = self.env['pos.session'].create({
+                'user_id': self.env.uid,
+                'config_id': pos_config.id
+            })
+        else:
+            session = pos_config.current_session_id
+        
+        # Create POS order
+        pos_order_vals = {
+            'config_id': pos_config.id,
+            'session_id': session.id,
+            'partner_id': parent.id,
+            'pos_reference': f'BULK-{len(subscriptions)}-{parent.name[:10]}',
+            'state': 'draft',
+            'amount_tax': 0.0,
+            'amount_total': 0.0,
+            'amount_paid': 0.0,
+            'amount_return': 0.0,
+        }
+        
+        pos_order = self.env['pos.order'].create(pos_order_vals)
+        
+        # Add order lines for each subscription
+        total_amount = 0.0
+        total_tax = 0.0
+        
+        for subscription in subscriptions:
+            packages = subscription.package_ids if subscription.package_ids else [subscription.package_id] if subscription.package_id else []
+            
+            for package in packages:
+                if package.linked_product_id:
+                    product = package.linked_product_id
+                    
+                    # Calculate taxes properly
+                    taxes = product.taxes_id.filtered(lambda t: t.company_id == pos_config.company_id)
+                    price_unit = package.price
+                    
+                    # Compute tax amount
+                    tax_results = taxes.compute_all(
+                        price_unit, 
+                        currency=pos_config.currency_id,
+                        quantity=1,
+                        product=product,
+                        partner=parent
+                    )
+                    
+                    line_tax = tax_results['total_included'] - tax_results['total_excluded']
+                    
+                    # Create POS order line
+                    self.env['pos.order.line'].create({
+                        'order_id': pos_order.id,
+                        'product_id': product.id,
+                        'qty': 1,
+                        'price_unit': price_unit,
+                        'price_subtotal': tax_results['total_excluded'],
+                        'price_subtotal_incl': tax_results['total_included'],
+                        'full_product_name': f"{package.name} - {subscription.child_id.name}",
+                        'tax_ids': [(6, 0, taxes.ids)],
+                    })
+                    
+                    total_amount += tax_results['total_included']
+                    total_tax += line_tax
+        
+        # Update POS order with computed totals
+        pos_order.write({
+            'amount_tax': total_tax,
+            'amount_total': total_amount,
+        })
+        
+        # Link POS order to all subscriptions
+        for subscription in subscriptions:
+            subscription.pos_order_id = pos_order.id
+        
+        return pos_order
     
     @api.depends('pos_order_id', 'pos_order_id.state')
     def _compute_payment_status(self):

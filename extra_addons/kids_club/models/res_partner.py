@@ -116,6 +116,37 @@ class ResPartner(models.Model):
                 },
             }
     
+    def action_quick_subscription(self):
+        """Quick subscription action for parent's children"""
+        self.ensure_one()
+        
+        # Get active children
+        active_children = self.children_ids.filtered(lambda c: c.active)
+        
+        if not active_children:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'No Children Available',
+                    'message': 'No active children found for subscription assignment.',
+                    'type': 'warning',
+                }
+            }
+        
+        # Open subscription wizard for all children
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Create Subscriptions for {self.name}',
+            'res_model': 'kids.subscription.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_parent_id': self.id,
+                'default_child_ids': [(6, 0, active_children.ids)],
+            },
+        }
+    
     @api.model
     def create(self, vals):
         """Override create to set is_kids_club_parent if children are added"""
