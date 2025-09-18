@@ -87,6 +87,77 @@
         </field>
     </record>
 
+    <!-- Customer Kanban View for Kids Club -->
+    <record id="view_partner_kanban_kids_club" model="ir.ui.view">
+        <field name="name">res.partner.kanban.kids.club</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <kanban class="o_res_partner_kanban">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="email"/>
+                <field name="phone"/>
+                <field name="mobile"/>
+                <field name="image_128"/>
+                <field name="children_ids"/>
+                <field name="children_count"/>
+                <field name="membership_status"/>
+                
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <div class="o_kanban_image">
+                                <img t-att-src="kanban_image('res.partner', 'image_128', record.id.raw_value)" 
+                                     alt="Parent Photo" class="o_kanban_image_inner"/>
+                            </div>
+                            
+                            <div class="oe_kanban_details">
+                                <div class="o_kanban_record_top">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title">
+                                            <field name="name"/>
+                                        </strong>
+                                        <div t-if="record.membership_status.value" class="o_kanban_record_subtitle">
+                                            <span t-att-class="'badge ' + (record.membership_status.value === 'active' ? 'badge-success' : record.membership_status.value === 'inactive' ? 'badge-secondary' : 'badge-warning')">
+                                                <t t-esc="record.membership_status.value"/>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="o_kanban_record_body">
+                                    <!-- Contact Information -->
+                                    <div t-if="record.mobile.value" class="o_row">
+                                        <i class="fa fa-mobile text-primary" title="Mobile"/> 
+                                        <field name="mobile"/>
+                                    </div>
+                                    <div t-if="record.phone.value" class="o_row">
+                                        <i class="fa fa-phone text-info" title="Phone"/> 
+                                        <field name="phone"/>
+                                    </div>
+                                    <div t-if="record.email.value" class="o_row">
+                                        <i class="fa fa-envelope text-success" title="Email"/> 
+                                        <field name="email"/>
+                                    </div>
+                                    
+                                    <!-- Children Information -->
+                                    <div t-if="record.children_count.value > 0" class="o_row">
+                                        <i class="fa fa-child text-warning" title="Children"/> 
+                                        <strong>
+                                            <t t-esc="record.children_count.value"/> 
+                                            <t t-if="record.children_count.value == 1">child</t>
+                                            <t t-else="">children</t>
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
     <!-- Customer List View for Kids Club -->
     <record id="view_partner_list_kids_club" model="ir.ui.view">
         <field name="name">res.partner.list.kids.club</field>
@@ -110,21 +181,41 @@
         <field name="model">res.partner</field>
         <field name="arch" type="xml">
             <search string="Search Parents">
-                <field name="name" string="Parent Name"/>
-                <field name="phone"/>
-                <field name="email"/>
+                <!-- Main search fields with comprehensive search -->
+                <field name="name" string="Search" 
+                       filter_domain="['|', '|', '|', '|', 
+                                       ('name', 'ilike', self),
+                                       ('mobile', 'ilike', self),
+                                       ('phone', 'ilike', self),
+                                       ('email', 'ilike', self),
+                                       ('children_ids.name', 'ilike', self)]"/>
+                <field name="mobile" string="Mobile"/>
+                <field name="phone" string="Phone"/>
+                <field name="email" string="Email"/>
                 <field name="children_ids" string="Child Name"/>
                 
+                <separator/>
+                <!-- Quick filters -->
                 <filter string="Kids Club Parents" name="kids_club_parents" 
                         domain="[('is_kids_club_parent', '=', True)]"/>
                 <filter string="Active Membership" name="active_membership" 
                         domain="[('membership_status', '=', 'active')]"/>
                 <filter string="Has Children" name="has_children" 
                         domain="[('children_count', '>', 0)]"/>
+                <filter string="Has Mobile" name="has_mobile" 
+                        domain="[('mobile', '!=', False)]"/>
+                <filter string="Has Email" name="has_email" 
+                        domain="[('email', '!=', False)]"/>
                 
+                <separator/>
+                <!-- Group by options -->
                 <group expand="0" string="Group By">
-                    <filter string="Membership Status" name="group_membership" context="{'group_by': 'membership_status'}"/>
-                    <filter string="Number of Children" name="group_children" context="{'group_by': 'children_count'}"/>
+                    <filter string="Membership Status" name="group_membership" 
+                            context="{'group_by': 'membership_status'}"/>
+                    <filter string="Number of Children" name="group_children" 
+                            context="{'group_by': 'children_count'}"/>
+                    <filter string="City" name="group_city" 
+                            context="{'group_by': 'city'}"/>
                 </group>
             </search>
         </field>
@@ -134,8 +225,9 @@
     <record id="action_partner_kids_club" model="ir.actions.act_window">
         <field name="name">Parents</field>
         <field name="res_model">res.partner</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">kanban,list,form</field>
         <field name="view_ids" eval="[(5, 0, 0),
+                                      (0, 0, {'view_mode': 'kanban', 'view_id': ref('view_partner_kanban_kids_club')}),
                                       (0, 0, {'view_mode': 'list', 'view_id': ref('view_partner_list_kids_club')}),
                                       (0, 0, {'view_mode': 'form', 'view_id': ref('base.view_partner_form')})]"/>
         <field name="search_view_id" ref="view_partner_search_kids_club"/>
@@ -147,10 +239,12 @@
         }</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                Add your first parent!
+                Welcome to Parents View!
             </p>
             <p>
-                Register parents for Kids Club membership and manage their children.
+                Here you can see all parents with their children information.<br/>
+                Search by parent name, child name, phone number, or email.<br/>
+                Click on any parent to view their complete details.
             </p>
         </field>
     </record>
