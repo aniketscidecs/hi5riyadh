@@ -340,9 +340,11 @@ class ChildSubscription(models.Model):
         ('draft', 'Draft'),
         ('confirmed', 'Confirmed'),
         ('paid', 'Paid'),
+        ('active', 'Active'),
+        ('expired', 'Expired'),
         ('cancelled', 'Cancelled')
     ], string='Status', default='draft', tracking=True)
-    
+    activation_date = fields.Datetime('Activation Date', help='Date when subscription was activated (payment received)')
     # Activity status - separate from workflow state
     is_active = fields.Boolean('Is Active', compute='_compute_is_active', store=True)
     activity_status = fields.Char('Activity Status', compute='_compute_activity_status')
@@ -598,27 +600,27 @@ class ChildSubscription(models.Model):
         if not packages:
             raise ValidationError("No packages selected for subscription.")
         
-        # Create POS order with customer and products pre-loaded
-        pos_order = self._create_pos_order_with_session(pos_config, customer, packages)
+        # Create POS order properly to avoid duplicates
+        pos_order = self._create_pos_order_for_subscription(pos_config, customer, packages)
         
-        # Show success message with instructions
+        # Show success message and open POS interface
         message = (
-            f"Subscription confirmed! POS is opening with a draft order created.\n\n"
+            f"Subscription confirmed and POS order created!\n\n"
             f"Customer: {customer.name}\n"
-            f"Products: {', '.join([pkg.name for pkg in packages if pkg.linked_product_id])}\n\n"
-            f"The draft order ({pos_order.pos_reference}) is ready in the POS session. "
-            f"You can load it from the Orders menu in POS or create a new order with the same items."
+            f"Child: {self.child_id.name}\n"
+            f"Packages: {', '.join([pkg.name for pkg in packages if pkg.linked_product_id])}\n"
+            f"POS Order: {pos_order.pos_reference}\n\n"
+            f"Opening POS interface for payment..."
         )
         
-        # Return notification with POS action
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': 'Subscription Confirmed - POS Opening',
+                'title': 'Subscription Confirmed - Opening POS',
                 'message': message,
                 'type': 'success',
-                'sticky': True,
+                'sticky': False,
                 'next': pos_config.open_ui()
             }
         }
@@ -629,64 +631,62 @@ class ChildSubscription(models.Model):
             record.state = 'cancelled'
         return True
     
-    @api.depends('invoice_ids', 'invoice_ids.payment_state', 'invoice_ids.state')
+    @api.depends('pos_order_id', 'pos_order_id.state')
     def _compute_payment_status(self):
-        """Compute payment status and auto-update subscription state"""
+        """Compute payment status based on POS order and auto-update subscription state"""
         import logging
         _logger = logging.getLogger(__name__)
         
         for record in self:
-            _logger.info(f"Checking payment status for subscription {record.name}")
+            _logger.info(f"Checking POS payment status for subscription {record.name}")
             
-            if not record.invoice_ids:
-                _logger.info(f"No invoices found for subscription {record.name}")
+            if not record.pos_order_id:
+                _logger.info(f"No POS order found for subscription {record.name}")
                 record.is_fully_paid = False
                 continue
             
-            _logger.info(f"Found {len(record.invoice_ids)} invoices for subscription {record.name}")
+            _logger.info(f"POS order {record.pos_order_id.name}: state={record.pos_order_id.state}")
             
-            # Only consider posted invoices (not draft or cancelled)
-            posted_invoices = record.invoice_ids.filtered(lambda inv: inv.state == 'posted')
-            _logger.info(f"Posted invoices: {len(posted_invoices)}")
+            # Check if POS order is paid or invoiced (both indicate payment received)
+            # POS states: draft, cancel, paid, done
+            # Also check invoice_status and account_move for comprehensive coverage
+            pos_state = record.pos_order_id.state
+            has_invoice = bool(record.pos_order_id.account_move)
+            invoice_status = getattr(record.pos_order_id, 'invoice_status', None)
             
-            if not posted_invoices:
-                record.is_fully_paid = False
-                continue
+            # Payment is received if: state is 'paid' or 'done', OR has invoice (means payment was processed)
+            pos_paid = pos_state in ['paid', 'done'] or has_invoice
+            record.is_fully_paid = pos_paid
             
-            # Check payment status of each invoice
-            for invoice in posted_invoices:
-                _logger.info(f"Invoice {invoice.name}: state={invoice.state}, payment_state={invoice.payment_state}")
+            _logger.info(f"POS order state: {pos_state}, invoice_status: {invoice_status}, has_invoice: {has_invoice}, Payment received: {pos_paid}, Current subscription state: {record.state}")
             
-            # Check if all posted invoices are paid
-            all_paid = all(invoice.payment_state == 'paid' for invoice in posted_invoices)
-            record.is_fully_paid = all_paid
-            
-            _logger.info(f"All invoices paid: {all_paid}, Current subscription state: {record.state}")
-            
-            # Auto-update subscription state to 'paid' when fully paid
-            if all_paid and record.state == 'confirmed':
-                _logger.info(f"Updating subscription {record.name} state to 'paid'")
-                record.with_context(skip_payment_check=True).write({'state': 'paid'})
+            # Auto-update subscription state to 'paid' when POS order is paid or invoiced
+            if pos_paid and record.state == 'confirmed':
+                _logger.info(f"Updating subscription {record.name} state to 'paid' (POS payment received - state: {record.pos_order_id.state})")
+                record.with_context(skip_payment_check=True).write({
+                    'state': 'paid',
+                    'activation_date': fields.Datetime.now()
+                })
             else:
-                _logger.info(f"Not updating state: all_paid={all_paid}, state={record.state}")
+                _logger.info(f"Not updating state: pos_paid={pos_paid}, state={record.state}")
     
     def write(self, vals):
         """Override write to trigger payment status check when invoices change"""
         result = super().write(vals)
         
-        # If invoice_ids changed, recompute payment status
-        if 'invoice_ids' in vals or 'pos_order_id' in vals:
+        # If pos_order_id changed, recompute payment status
+        if 'pos_order_id' in vals:
             self._compute_payment_status()
         
         return result
     
     @api.model
     def _check_payment_status_cron(self):
-        """Cron job to periodically check and update payment status"""
+        """Cron job to periodically check and update payment status based on POS orders"""
         # Find all confirmed subscriptions that might need status updates
         confirmed_subscriptions = self.search([
             ('state', '=', 'confirmed'),
-            ('invoice_ids', '!=', False)
+            ('pos_order_id', '!=', False)
         ])
         
         for subscription in confirmed_subscriptions:
@@ -759,13 +759,16 @@ class ChildSubscription(models.Model):
             }
         }
     
-    def _create_pos_order_with_session(self, pos_config, customer, packages):
-        """Create POS order with proper session management based on Odoo source code"""
+    def _create_pos_order_for_subscription(self, pos_config, customer, packages):
+        """Create POS order for subscription with proper session management"""
         self.ensure_one()
         
-        # Ensure POS session exists (following Odoo's pattern)
+        # Check if POS order already exists for this subscription to avoid duplicates
+        if self.pos_order_id:
+            return self.pos_order_id
+            
+        # Ensure POS session exists
         if not pos_config.current_session_id:
-            # Create session like Odoo does in _action_to_open_ui
             session = self.env['pos.session'].create({
                 'user_id': self.env.uid,
                 'config_id': pos_config.id
@@ -780,8 +783,8 @@ class ChildSubscription(models.Model):
             'partner_id': customer.id,
             'pos_reference': f'SUB-{self.name}',
             'state': 'draft',
-            'amount_tax': 0.0,  # Will be computed after adding lines
-            'amount_total': 0.0,  # Will be computed after adding lines
+            'amount_tax': 0.0,
+            'amount_total': 0.0,
             'amount_paid': 0.0,
             'amount_return': 0.0,
         }
@@ -836,6 +839,27 @@ class ChildSubscription(models.Model):
         self.pos_order_id = pos_order.id
         
         return pos_order
+    
+    @api.model
+    def create_pos_order_for_subscription(self, subscription_id, pos_config_id):
+        """Create POS order for subscription when payment is processed (called from POS)"""
+        subscription = self.browse(subscription_id)
+        pos_config = self.env['pos.config'].browse(pos_config_id)
+        
+        if not subscription.exists() or not pos_config.exists():
+            return False
+            
+        # Get customer and packages
+        customer = subscription.child_id.parent_id
+        packages = subscription.package_ids if subscription.package_ids else [subscription.package_id] if subscription.package_id else []
+        
+        if not customer or not packages:
+            return False
+            
+        # Use the instance method to create the order
+        pos_order = subscription._create_pos_order_for_subscription(pos_config, customer, packages)
+        
+        return pos_order.id if pos_order else False
     
     def action_view_pos_order(self):
         """Action to view the related POS order"""

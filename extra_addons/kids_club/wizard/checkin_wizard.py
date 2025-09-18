@@ -388,5 +388,6 @@ class CheckinWizard(models.TransientModel):
                 'message': f'{self.child_id.name} has been checked in successfully{" to " + self.room_id.name if self.room_id else ""}.\nRemaining visits: {self.subscription_id.remaining_visits}',
                 'type': 'success',
                 'sticky': False,
+                'next': {'type': 'ir.actions.act_window_close'}
             }
         }
