@@ -48,6 +48,9 @@ class ChildCheckin(models.Model):
     # Total allowed time for JavaScript access
     allowed_minutes = fields.Integer('Allowed Minutes', compute='_compute_allowed_minutes')
     
+    # Additional information
+    notes = fields.Text('Notes', help='Additional notes about the check-in')
+    
     # Payment confirmation
     payment_confirmed = fields.Boolean('Payment Confirmed', default=False)
     payment_confirmation_time = fields.Datetime('Payment Confirmed Time')
