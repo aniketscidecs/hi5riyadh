@@ -17,7 +17,14 @@
     """,
     'author': 'Hi5 Entertainment Centre',
     'website': 'https://hi5riyadh.com',
-    'depends': ['base', 'mail', 'contacts', 'stock', 'sale', 'account', 'web', 'point_of_sale', 'sale_stock'],
+    'depends': [
+        'base',
+        'contacts',
+        'stock',
+        'account',
+        'point_of_sale',
+        'sale_stock',
+    ],
     'assets': {
         'web.assets_backend': [
             'kids_club/static/src/css/dashboard_timer.css',

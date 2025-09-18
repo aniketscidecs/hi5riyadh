@@ -202,11 +202,11 @@
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button class="oe_stat_button" type="object" 
-                                name="action_view_sale_order" icon="fa-shopping-cart"
-                                invisible="not sale_order_id">
+                                name="action_view_pos_order" icon="fa-shopping-cart"
+                                invisible="not pos_order_id">
                             <div class="o_field_widget o_stat_info">
                                 <span class="o_stat_text">View</span>
-                                <span class="o_stat_text">Sale Order</span>
+                                <span class="o_stat_text">POS Order</span>
                             </div>
                         </button>
                         <button class="oe_stat_button" type="object" 
@@ -317,7 +317,7 @@
                 <field name="activity_status" widget="badge" decoration-success="activity_status == 'active'" decoration-danger="activity_status == 'inactive'"/>
                 <field name="total_price" widget="monetary"/>
                 <field name="currency_id" invisible="1"/>
-                <field name="sale_order_id" optional="hide"/>
+                <field name="pos_order_id" optional="hide"/>
             </list>
         </field>
     </record>

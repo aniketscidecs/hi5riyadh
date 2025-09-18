@@ -1,8 +1,9 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
-from datetime import date
-import base64
-import io
+from datetime import datetime, timedelta
+import uuid
+import json
+import time
 from PIL import Image, ImageDraw, ImageFont
 import barcode
 from barcode.writer import ImageWriter
@@ -376,8 +377,8 @@ class ChildSubscription(models.Model):
     payment_ids = fields.Many2many('account.payment', compute='_compute_payment_ids', string='Payments')
     payment_count = fields.Integer(compute='_compute_payment_count')
     
-    # Sale Order Integration
-    sale_order_id = fields.Many2one('sale.order', string='Sale Order', readonly=True)
+    # Payment Integration
+    pos_order_id = fields.Many2one('pos.order', string='POS Order', readonly=True)
     invoice_ids = fields.Many2many('account.move', compute='_compute_invoice_ids', string='Invoices')
     invoice_count = fields.Integer('Invoice Count', compute='_compute_invoice_count')
     
@@ -467,11 +468,12 @@ class ChildSubscription(models.Model):
             else:
                 record.remaining_days = 0
     
+    @api.depends('pos_order_id')
     def _compute_invoice_ids(self):
-        """Compute related invoices from sale order"""
+        """Compute related invoices from POS order"""
         for record in self:
-            if record.sale_order_id:
-                record.invoice_ids = record.sale_order_id.invoice_ids
+            if record.pos_order_id and record.pos_order_id.account_move:
+                record.invoice_ids = record.pos_order_id.account_move
             else:
                 record.invoice_ids = self.env['account.move']
     
@@ -566,24 +568,57 @@ class ChildSubscription(models.Model):
             record.display_name = f"{subscription_name} - {child_name} ({package_info})"
     
     def action_confirm(self):
-        """Confirm the subscription and create sale order"""
+        """Confirm the subscription and redirect to POS for payment"""
         self.ensure_one()
         if not self.package_ids and not self.package_id:
             raise ValidationError("Please select at least one package.")
         
-        # Create sale order
-        sale_order = self._create_sale_order()
-        self.sale_order_id = sale_order.id
+        # Get configured POS for subscriptions
+        subscription_pos_id = self.env['ir.config_parameter'].sudo().get_param('kids_club.subscription_pos_id')
+        if not subscription_pos_id:
+            raise ValidationError("No POS configured for subscriptions. Please configure in Kids Club > Configuration > POS Settings.")
+        
+        # Validate POS exists and is active
+        pos_config = self.env['pos.config'].browse(int(subscription_pos_id))
+        if not pos_config.exists():
+            raise ValidationError("Configured subscription POS no longer exists. Please update POS Settings.")
+        
+        # Update subscription state
         self.state = 'confirmed'
         
-        # Return action to view the sale order
+        # Get customer and product information for POS
+        customer = self.child_id.parent_id
+        if not customer:
+            raise ValidationError(_("Child must have a parent assigned."))
+        
+        # Get packages to process
+        packages = self.package_ids if self.package_ids else [self.package_id] if self.package_id else []
+        if not packages:
+            raise ValidationError("No packages selected for subscription.")
+        
+        # Create POS order with customer and products pre-loaded
+        pos_order = self._create_pos_order_with_session(pos_config, customer, packages)
+        
+        # Show success message with instructions
+        message = (
+            f"Subscription confirmed! POS is opening with a draft order created.\n\n"
+            f"Customer: {customer.name}\n"
+            f"Products: {', '.join([pkg.name for pkg in packages if pkg.linked_product_id])}\n\n"
+            f"The draft order ({pos_order.pos_reference}) is ready in the POS session. "
+            f"You can load it from the Orders menu in POS or create a new order with the same items."
+        )
+        
+        # Return notification with POS action
         return {
-            'type': 'ir.actions.act_window',
-            'name': 'Sale Order',
-            'res_model': 'sale.order',
-            'res_id': sale_order.id,
-            'view_mode': 'form',
-            'target': 'current',
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Subscription Confirmed - POS Opening',
+                'message': message,
+                'type': 'success',
+                'sticky': True,
+                'next': pos_config.open_ui()
+            }
         }
     
     def action_cancel(self):
@@ -638,7 +673,7 @@ class ChildSubscription(models.Model):
         result = super().write(vals)
         
         # If invoice_ids changed, recompute payment status
-        if 'invoice_ids' in vals or 'sale_order_id' in vals:
+        if 'invoice_ids' in vals or 'pos_order_id' in vals:
             self._compute_payment_status()
         
         return result
@@ -722,51 +757,95 @@ class ChildSubscription(models.Model):
             }
         }
     
-    def _create_sale_order(self):
-        """Create sale order with selected packages"""
+    def _create_pos_order_with_session(self, pos_config, customer, packages):
+        """Create POS order with proper session management based on Odoo source code"""
         self.ensure_one()
         
-        # Get customer (parent)
-        customer = self.child_id.parent_id
-        if not customer:
-            raise ValidationError(_("Child must have a parent assigned."))
+        # Ensure POS session exists (following Odoo's pattern)
+        if not pos_config.current_session_id:
+            # Create session like Odoo does in _action_to_open_ui
+            session = self.env['pos.session'].create({
+                'user_id': self.env.uid,
+                'config_id': pos_config.id
+            })
+        else:
+            session = pos_config.current_session_id
         
-        # Create sale order
-        sale_order_vals = {
+        # Create POS order with all required fields properly computed
+        pos_order_vals = {
+            'config_id': pos_config.id,
+            'session_id': session.id,
             'partner_id': customer.id,
-            'date_order': fields.Datetime.now(),
-            'origin': self.name,
+            'pos_reference': f'SUB-{self.name}',
+            'state': 'draft',
+            'amount_tax': 0.0,  # Will be computed after adding lines
+            'amount_total': 0.0,  # Will be computed after adding lines
+            'amount_paid': 0.0,
+            'amount_return': 0.0,
         }
-        sale_order = self.env['sale.order'].create(sale_order_vals)
         
-        # Get packages to process
-        packages = self.package_ids if self.package_ids else [self.package_id] if self.package_id else []
+        pos_order = self.env['pos.order'].create(pos_order_vals)
         
-        # Create order lines for each package
+        # Add order lines for each package
+        total_amount = 0.0
+        total_tax = 0.0
+        
         for package in packages:
             if package.linked_product_id:
-                order_line_vals = {
-                    'order_id': sale_order.id,
-                    'product_id': package.linked_product_id.id,
-                    'name': f"{package.name} - {self.child_id.barcode_id}",
-                    'product_uom_qty': 1,
-                    'price_unit': package.price,
-                }
-                self.env['sale.order.line'].create(order_line_vals)
+                product = package.linked_product_id
+                
+                # Calculate taxes properly
+                taxes = product.taxes_id.filtered(lambda t: t.company_id == pos_config.company_id)
+                price_unit = package.price
+                
+                # Compute tax amount
+                tax_results = taxes.compute_all(
+                    price_unit, 
+                    currency=pos_config.currency_id,
+                    quantity=1,
+                    product=product,
+                    partner=customer
+                )
+                
+                line_tax = tax_results['total_included'] - tax_results['total_excluded']
+                
+                # Create POS order line with proper tax computation
+                self.env['pos.order.line'].create({
+                    'order_id': pos_order.id,
+                    'product_id': product.id,
+                    'qty': 1,
+                    'price_unit': price_unit,
+                    'price_subtotal': tax_results['total_excluded'],
+                    'price_subtotal_incl': tax_results['total_included'],
+                    'full_product_name': f"{package.name} - {self.child_id.name}",
+                    'tax_ids': [(6, 0, taxes.ids)],
+                })
+                
+                total_amount += tax_results['total_included']
+                total_tax += line_tax
         
-        return sale_order
+        # Update POS order with computed totals
+        pos_order.write({
+            'amount_tax': total_tax,
+            'amount_total': total_amount,
+        })
+        
+        # Link POS order to subscription for tracking
+        self.pos_order_id = pos_order.id
+        
+        return pos_order
     
-    def action_view_sale_order(self):
-        """Action to view the related sale order"""
+    def action_view_pos_order(self):
+        """Action to view the related POS order"""
         self.ensure_one()
-        if not self.sale_order_id:
-            return {'type': 'ir.actions.act_window_close'}
+        if not self.pos_order_id:
+            raise ValidationError("No POS order found for this subscription.")
         
         return {
             'type': 'ir.actions.act_window',
-            'name': _('Sale Order'),
-            'res_model': 'sale.order',
-            'res_id': self.sale_order_id.id,
+            'name': 'POS Order',
+            'res_model': 'pos.order',
+            'res_id': self.pos_order_id.id,
             'view_mode': 'form',
             'target': 'current',
         }
