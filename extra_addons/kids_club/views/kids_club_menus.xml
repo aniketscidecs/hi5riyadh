@@ -16,6 +16,15 @@
         </field>
     </record>
 
+    <!-- Action for Kids Club POS Configuration Settings -->
+    <record id="action_kids_club_pos_config" model="ir.actions.act_window">
+        <field name="name">Kids Club POS Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="context">{'module': 'kids_club', 'bin_size': False}</field>
+    </record>
+
     <!-- Main Menu for Kids Club -->
     <menuitem 
         id="menu_kids_club_main"
@@ -102,4 +111,12 @@
         parent="menu_kids_club_config"
         action="action_kids_room"
         sequence="20"/>
+
+    <!-- POS Settings under Configuration -->
+    <menuitem 
+        id="menu_kids_club_pos_settings"
+        name="Settings"
+        parent="menu_kids_club_config"
+        action="action_kids_club_pos_config"
+        sequence="30"/>
 </odoo>

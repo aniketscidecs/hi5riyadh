@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Kids Club Configuration Settings -->
+        <record id="res_config_settings_view_form" model="ir.ui.view">
+            <field name="name">res.config.settings.view.form.inherit.kids.club</field>
+            <field name="model">res.config.settings</field>
+            <field name="priority" eval="25"/>
+            <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//form" position="inside">
+                    <app data-string="Kids Club" string="Kids Club" name="kids_club" groups="base.group_system">
+                        <block title="POS Configuration" name="pos_configuration">
+                            <setting string="Subscription POS" help="Select POS terminal for selling subscription packages">
+                                <div class="content-group">
+                                    <div class="mt16">
+                                        <field name="kids_club_subscription_pos_id" 
+                                               placeholder="Select POS terminal for subscriptions..."
+                                               options="{'no_create': True}"/>
+                                    </div>
+                                </div>
+                            </setting>
+                            
+                            <setting string="Canteen POS" help="Select POS terminal for canteen sales">
+                                <div class="content-group">
+                                    <div class="mt16">
+                                        <field name="kids_club_canteen_pos_id" 
+                                               placeholder="Select POS terminal for canteen..."
+                                               options="{'no_create': True}"/>
+                                    </div>
+                                </div>
+                            </setting>
+                        </block>
+                    </app>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
