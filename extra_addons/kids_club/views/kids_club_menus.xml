@@ -34,6 +34,13 @@
 
 
 
+    <!-- Reception Menu Section (Empty for now) -->
+    <menuitem 
+        id="menu_reception_root"
+        name="Reception"
+        parent="menu_kids_club_main"
+        sequence="15"/>
+
     <!-- Parents Menu -->
     <menuitem 
         id="menu_parents"
@@ -48,7 +55,7 @@
         name="Children"
         parent="menu_kids_club_main"
         action="action_child"
-        sequence="30"/>
+        sequence="20"/>
 
     <!-- Child Subscriptions Menu -->
     <menuitem 
@@ -56,14 +63,14 @@
         name="Subscriptions"
         parent="menu_kids_club_main"
         action="action_child_subscription"
-        sequence="40"/>
+        sequence="30"/>
 
     <!-- Check-in/Check-out Menu -->
     <menuitem 
         id="menu_kids_checkin_root"
         name="Attendance"
         parent="menu_kids_club_main"
-        sequence="50"/>
+        sequence="40"/>
 
     <!-- Live Dashboard Menu -->
     <menuitem 

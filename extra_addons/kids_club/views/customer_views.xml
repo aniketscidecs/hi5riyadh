@@ -87,120 +87,6 @@
         </field>
     </record>
 
-    <!-- Customer Kanban View for Kids Club -->
-    <record id="view_partner_kanban_kids_club" model="ir.ui.view">
-        <field name="name">res.partner.kanban.kids.club</field>
-        <field name="model">res.partner</field>
-        <field name="arch" type="xml">
-            <kanban class="o_res_partner_kanban">
-                <field name="id"/>
-                <field name="name"/>
-                <field name="email"/>
-                <field name="phone"/>
-                <field name="mobile"/>
-                <field name="image_128"/>
-                <field name="children_ids"/>
-                <field name="children_count"/>
-                <field name="membership_status"/>
-                <field name="city"/>
-                <field name="country_id"/>
-                
-                <templates>
-                    <t t-name="kanban-box">
-                        <div class="oe_kanban_card oe_kanban_global_click">
-                            <!-- Parent Photo -->
-                            <div class="oe_kanban_global_click_edit o_kanban_image">
-                                <img t-att-src="kanban_image('res.partner', 'image_128', record.id.raw_value)" 
-                                     alt="Parent Photo" class="o_kanban_image_inner"/>
-                            </div>
-                            
-                            <div class="oe_kanban_details">
-                                <!-- Header with Name and Actions -->
-                                <div class="o_kanban_record_top">
-                                    <div class="o_kanban_record_headings">
-                                        <strong class="o_kanban_record_title">
-                                            <field name="name"/>
-                                        </strong>
-                                        <div class="o_kanban_record_subtitle">
-                                            <span t-if="record.membership_status.value" 
-                                                  t-att-class="'badge badge-pill ' + (record.membership_status.value === 'active' ? 'badge-success' : record.membership_status.value === 'inactive' ? 'badge-secondary' : 'badge-warning')">
-                                                <t t-esc="record.membership_status.value"/>
-                                            </span>
-                                            <span t-if="record.city.value" class="text-muted ml-2">
-                                                <i class="fa fa-map-marker"/> <t t-esc="record.city.value"/>
-                                            </span>
-                                        </div>
-                                    </div>
-                                    
-
-                                </div>
-                                
-                                <!-- Contact Information -->
-                                <div class="o_kanban_record_body">
-                                    <div class="row no-gutters">
-                                        <div class="col-12">
-                                            <!-- Contact Details -->
-                                            <div t-if="record.mobile.value" class="o_row mb-1">
-                                                <i class="fa fa-mobile text-primary mr-1" title="Mobile"/> 
-                                                <strong><field name="mobile"/></strong>
-                                            </div>
-                                            <div t-if="record.phone.value and record.phone.value != record.mobile.value" class="o_row mb-1">
-                                                <i class="fa fa-phone text-info mr-1" title="Phone"/> 
-                                                <field name="phone"/>
-                                            </div>
-                                            <div t-if="record.email.value" class="o_row mb-2">
-                                                <i class="fa fa-envelope text-success mr-1" title="Email"/> 
-                                                <small><field name="email"/></small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Children Section -->
-                                    <div t-if="record.children_count.value > 0" class="border-top pt-2">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <div>
-                                                <i class="fa fa-child text-warning mr-1"/> 
-                                                <strong>
-                                                    <t t-esc="record.children_count.value"/> 
-                                                    <t t-if="record.children_count.value == 1">Child</t>
-                                                    <t t-else="">Children</t>
-                                                </strong>
-                                            </div>
-                                            <div class="btn-group" role="group">
-                                                <button name="action_view_children" type="object" 
-                                                        class="btn btn-xs btn-outline-primary" 
-                                                        title="View Children">
-                                                    <i class="fa fa-eye"/>
-                                                </button>
-                                                <button name="action_quick_checkin" type="object" 
-                                                        class="btn btn-xs btn-outline-success" 
-                                                        title="Quick Check-in">
-                                                    <i class="fa fa-sign-in"/>
-                                                </button>
-                                                <button name="action_quick_subscription" type="object" 
-                                                        class="btn btn-xs btn-outline-warning" 
-                                                        title="Quick Subscription">
-                                                    <i class="fa fa-calendar-plus-o"/>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- No Children Message -->
-                                    <div t-if="record.children_count.value == 0" class="text-center text-muted py-3">
-                                        <i class="fa fa-user-plus fa-2x mb-2"/>
-                                        <br/>
-                                        <small>No children registered</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </t>
-                </templates>
-            </kanban>
-        </field>
-    </record>
-
     <!-- Customer List View for Kids Club -->
     <record id="view_partner_list_kids_club" model="ir.ui.view">
         <field name="name">res.partner.list.kids.club</field>
@@ -208,12 +94,13 @@
         <field name="arch" type="xml">
             <list string="Kids Club Parents">
                 <field name="name"/>
-                <field name="phone"/>
-                <field name="email"/>
-                <field name="children_count"/>
                 <field name="membership_status"/>
-                <field name="membership_start_date"/>
+                <field name="children_count"/>
                 <field name="is_kids_club_parent" invisible="1"/>
+                <!-- Children Button - Text Only -->
+                <button name="action_view_children" type="object" string="Children" 
+                        class="btn-link" 
+                        invisible="children_count == 0"/>
             </list>
         </field>
     </record>
@@ -268,9 +155,8 @@
     <record id="action_partner_kids_club" model="ir.actions.act_window">
         <field name="name">Parents</field>
         <field name="res_model">res.partner</field>
-        <field name="view_mode">kanban,list,form</field>
+        <field name="view_mode">list,form</field>
         <field name="view_ids" eval="[(5, 0, 0),
-                                      (0, 0, {'view_mode': 'kanban', 'view_id': ref('view_partner_kanban_kids_club')}),
                                       (0, 0, {'view_mode': 'list', 'view_id': ref('view_partner_list_kids_club')}),
                                       (0, 0, {'view_mode': 'form', 'view_id': ref('base.view_partner_form')})]"/>
         <field name="search_view_id" ref="view_partner_search_kids_club"/>
@@ -287,7 +173,7 @@
             <p>
                 Here you can see all parents with their children information.<br/>
                 Search by parent name, child name, phone number, or email.<br/>
-                Click on any parent to view their complete details.
+                Click the "Children" button to view each parent's children.
             </p>
         </field>
     </record>
