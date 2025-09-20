@@ -506,3 +506,246 @@ msgstr "تم إرسال رمز التحقق إلى بريد ولي الأمر ب
 #, python-format
 msgid "Child checked out successfully!"
 msgstr "تم تسجيل خروج الطفل بنجاح!"
+
+#. module: kids_club
+#: model:kids.reception.wizard,display_name:kids_club.reception_wizard
+msgid "Reception"
+msgstr "الاستقبال"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Parent Details"
+msgstr "بيانات ولي الأمر"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Kid Info"
+msgstr "معلومات الطفل"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Action"
+msgstr "الإجراء"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Summary"
+msgstr "الملخص"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Search or Create Parent"
+msgstr "البحث عن ولي الأمر أو إنشاء جديد"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Search Parent"
+msgstr "البحث عن ولي الأمر"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Selected Parent:"
+msgstr "ولي الأمر المحدد:"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Parent Information"
+msgstr "معلومات ولي الأمر"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Name (English)"
+msgstr "الاسم (بالإنجليزية)"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Name (Arabic)"
+msgstr "الاسم (بالعربية)"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Phone Number"
+msgstr "رقم الهاتف"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "ID Number"
+msgstr "رقم الهوية"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Branch"
+msgstr "الفرع"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Nationality"
+msgstr "الجنسية"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Email"
+msgstr "البريد الإلكتروني"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Kids Information"
+msgstr "معلومات الأطفال"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Child Information"
+msgstr "معلومات الطفل"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Enter child name in English"
+msgstr "أدخل اسم الطفل بالإنجليزية"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Enter child name in Arabic"
+msgstr "أدخل اسم الطفل بالعربية"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Notes"
+msgstr "ملاحظات"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Enter any notes"
+msgstr "أدخل أي ملاحظات"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Date of Birth"
+msgstr "تاريخ الميلاد"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Hijri Date"
+msgstr "التاريخ الهجري"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Enter Hijri date"
+msgstr "أدخل التاريخ الهجري"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Save Child"
+msgstr "حفظ الطفل"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Available Children"
+msgstr "الأطفال المتاحون"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Photo"
+msgstr "الصورة"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Child Name"
+msgstr "اسم الطفل"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Age"
+msgstr "العمر"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Barcode ID"
+msgstr "رقم الباركود"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Current Subscription"
+msgstr "الاشتراك الحالي"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "No children found for this parent."
+msgstr "لم يتم العثور على أطفال لولي الأمر هذا."
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Please go back and select a different parent or create children for this parent."
+msgstr "يرجى العودة واختيار ولي أمر آخر أو إنشاء أطفال لولي الأمر هذا."
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Select Action"
+msgstr "اختر الإجراء"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "← Previous"
+msgstr "← السابق"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Next →"
+msgstr "التالي →"
+
+#. module: kids_club
+#: view:kids.reception.wizard:kids_club.view_reception_wizard_form
+msgid "Complete"
+msgstr "إكمال"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_reception_wizard__temp_child_name_en
+msgid "Child Name (English)"
+msgstr "اسم الطفل (بالإنجليزية)"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_reception_wizard__temp_child_name_ar
+msgid "Child Name (Arabic)"
+msgstr "اسم الطفل (بالعربية)"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_reception_wizard__temp_child_notes
+msgid "Child Notes"
+msgstr "ملاحظات الطفل"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_reception_wizard__temp_child_hijri
+msgid "Hijri Date"
+msgstr "التاريخ الهجري"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_reception_wizard__temp_child_dob
+msgid "Date of Birth"
+msgstr "تاريخ الميلاد"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_reception_wizard__state
+msgid "State"
+msgstr "الحالة"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_reception_wizard__display_name
+msgid "Display Name"
+msgstr "اسم العرض"
+
+#. module: kids_club
+#: code:addons/kids_club/wizard/reception_wizard.py:0
+#, python-format
+msgid "Please select or enter parent information."
+msgstr "يرجى اختيار أو إدخال معلومات ولي الأمر."
+
+#. module: kids_club
+#: code:addons/kids_club/wizard/reception_wizard.py:0
+#, python-format
+msgid "Please enter child name in English."
+msgstr "يرجى إدخال اسم الطفل بالإنجليزية."
+
+#. module: kids_club
+#: code:addons/kids_club/wizard/reception_wizard.py:0
+#, python-format
+msgid "Please select a parent first."
+msgstr "يرجى اختيار ولي الأمر أولاً."
