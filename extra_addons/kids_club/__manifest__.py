@@ -45,6 +45,7 @@
         'views/checkout_wizard_views.xml',
         'views/bulk_checkin_wizard_views.xml',
         'views/subscription_wizard_views.xml',
+        'views/reception_wizard_views.xml',
         'views/customer_views.xml',
         'views/room_views.xml',
         'views/res_config_settings_views.xml',

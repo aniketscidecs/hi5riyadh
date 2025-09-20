@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Reception Wizard Form View -->
+    <record id="view_reception_wizard_form" model="ir.ui.view">
+        <field name="name">kids.reception.wizard.form</field>
+        <field name="model">kids.reception.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reception" create="false" edit="false" delete="false" duplicate="false">
+                <style>
+                    .o_form_button_create { display: none !important; }
+                    .o_form_button_edit { display: none !important; }
+                    .o_form_button_save { display: none !important; }
+                    .o_form_button_cancel { display: none !important; }
+                    .o_cp_buttons { display: none !important; }
+                    
+                    /* Ensure footer buttons are visible */
+                    .o_wizard_footer { 
+                        display: block !important; 
+                        padding: 15px 20px;
+                        background: #f8f9fa;
+                        border-top: 1px solid #dee2e6;
+                        margin-top: 20px;
+                    }
+                    .o_wizard_footer .btn { 
+                        display: inline-block !important; 
+                        margin: 0 5px;
+                    }
+                </style>
+                <header>
+                    <!-- Status Bar for 4 Steps -->
+                    <field name="state" widget="statusbar" statusbar_visible="parent_details,kid_info,action,summary" 
+                           options="{'clickable_stages': false}" readonly="1"/>
+                </header>
+
+                <sheet>
+                    <!-- Step 1: Parent Details -->
+                    <div invisible="state != 'parent_details'">
+                        <separator string="Search or Create Parent"/>
+                        <group>
+                            <field name="parent_id" string="Search Parent" 
+                                   options="{'create': true, 'create_edit': true}"
+                                   placeholder="Search by name, mobile, or child name..."
+                                   domain="[('is_kids_club_parent', '=', True)]"/>
+                        </group>
+                        
+                        <separator string="Parent Information" invisible="parent_id != False"/>
+                        <group invisible="parent_id != False">
+                            <group>
+                                <field name="parent_name" string="Name (English)" 
+                                       required="parent_id == False"/>
+                                <field name="parent_name_arabic" string="Name (Arabic)"/>
+                                <field name="parent_mobile" string="Mobile"/>
+                                <field name="parent_emergency_mobile" string="Emergency Mobile"/>
+                            </group>
+                            <group>
+                                <field name="parent_identification_type" string="ID Type"/>
+                                <field name="parent_identification_number" string="ID Number"/>
+                                <field name="parent_branch" string="Branch"/>
+                                <field name="parent_nationality" string="Nationality"/>
+                                <field name="parent_email" string="Email"/>
+                            </group>
+                        </group>
+                        
+                        <div class="alert alert-success" invisible="parent_id == False">
+                            <strong>Selected Parent:</strong> <field name="parent_id" readonly="1" nolabel="1"/>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Kid Info -->
+                    <div invisible="state != 'kid_info'">
+                        <separator string="Kids Information"/>
+                        <field name="available_children_ids" invisible="1"/>
+                        
+                        <!-- Child Details Form Section -->
+                        <div invisible="not parent_id">
+                            <separator string="Child Information"/>
+                            <group>
+                                <group>
+                                    <field name="temp_child_name_en" string="Name (English)" placeholder="Enter child name in English"/>
+                                    <field name="temp_child_notes" string="Notes" placeholder="Enter any notes"/>
+                                    <field name="temp_child_dob" string="Date of Birth"/>
+                                </group>
+                                <group>
+                                    <field name="temp_child_name_ar" string="Name (Arabic)" placeholder="Enter child name in Arabic"/>
+                                    <field name="temp_child_hijri" string="Hijri Date" placeholder="Enter Hijri date"/>
+                                </group>
+                            </group>
+                            <div class="mt-2">
+                                <button string="Save Child" name="action_save_child" type="object" class="btn btn-primary"/>
+                            </div>
+                        </div>
+                        
+                        <!-- Children Table Section -->
+                        <div invisible="not available_children_ids">
+                            <separator string="Available Children"/>
+                            <field name="available_children_ids" nolabel="1"/>
+                        </div>
+                        
+                        <div class="alert alert-info" invisible="available_children_ids">
+                            <strong>No children found for this parent.</strong> Please go back and select a different parent or create children for this parent.
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Action -->
+                    <div invisible="state != 'action'">
+                        <separator string="Select Action"/>
+                        <group>
+                            <field name="action_type" widget="radio" options="{'horizontal': true}"/>
+                        </group>
+                        
+                        <!-- Package Selection for Purchase -->
+                        <div invisible="action_type != 'purchase_packages'">
+                            <separator string="Package Selection"/>
+                            <group>
+                                <field name="package_ids" widget="many2many_tags" nolabel="1"/>
+                                <field name="auto_checkin" string="Auto Check-in after Purchase"/>
+                            </group>
+                        </div>
+                        
+                        <!-- Quick Actions Info -->
+                        <div class="alert alert-info" invisible="action_type not in ['quick_checkin', 'quick_checkout']">
+                            <strong>Quick Action Selected:</strong> This will immediately process the selected children.
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Summary -->
+                    <div invisible="state != 'summary'">
+                        <h2>Summary</h2>
+                        <group>
+                            <group>
+                                <field name="parent_id" readonly="1"/>
+                                <field name="available_children_ids" widget="many2many_tags" readonly="1" string="Available Children"/>
+                                <field name="action_type" readonly="1"/>
+                            </group>
+                            <group invisible="action_type != 'purchase_packages'">
+                                <field name="package_ids" widget="many2many_tags" readonly="1"/>
+                                <field name="total_amount" readonly="1"/>
+                                <field name="auto_checkin" readonly="1"/>
+                            </group>
+                        </group>
+                        <separator string="Summary"/>
+                        <field name="summary_text" readonly="1" nolabel="1"/>
+                    </div>
+                    
+                    <!-- Navigation Buttons -->
+                    <div class="o_wizard_footer" style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-top: 1px solid #dee2e6;">
+                        <!-- Left side buttons -->
+                        <div class="float-start">
+                            <button string="← Previous" name="action_previous_step" type="object" 
+                                    class="btn btn-secondary" 
+                                    invisible="state == 'parent_details'"/>
+                            
+                            <button string="Create New Parent" name="action_create_parent" type="object" 
+                                    class="btn btn-outline-primary" 
+                                    invisible="state != 'parent_details' or parent_id != False"/>
+                        </div>
+                        
+                        <!-- Right side buttons -->
+                        <div class="float-end">
+                            <button string="Next →" name="action_next_step" type="object" 
+                                    class="btn btn-primary" 
+                                    invisible="state == 'summary'"/>
+                        </div>
+                        <div class="clearfix"></div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+
+
+    <!-- Reception Wizard Action -->
+    <record id="action_reception_wizard" model="ir.actions.act_window">
+        <field name="name">Reception</field>
+        <field name="res_model">kids.reception.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">fullscreen</field>
+        <field name="context">{'default_state': 'parent_details'}</field>
+        <field name="view_id" ref="view_reception_wizard_form"/>
+    </record>
+
+</odoo>

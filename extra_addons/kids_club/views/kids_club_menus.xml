@@ -25,20 +25,40 @@
         <field name="context">{'module': 'kids_club', 'bin_size': False}</field>
     </record>
 
+    <!-- Kids Club Dashboard Action -->
+    <record id="action_kids_club_dashboard" model="ir.actions.act_window">
+        <field name="name">Kids Club Dashboard</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('is_kids_club_parent', '=', True)]</field>
+        <field name="context">{'search_default_is_kids_club_parent': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Welcome to Kids Club!
+            </p>
+            <p>
+                Use the Reception menu to register new customers and manage check-ins.
+                Navigate through the different sections using the menu above.
+            </p>
+        </field>
+    </record>
+
     <!-- Main Menu for Kids Club -->
     <menuitem 
         id="menu_kids_club_main"
         name="Kids Club"
+        action="action_kids_club_dashboard"
         web_icon="kids_club,static/description/icon.png"
         sequence="10"/>
 
 
 
-    <!-- Reception Menu Section (Empty for now) -->
+    <!-- Reception Menu -->
     <menuitem 
         id="menu_reception_root"
         name="Reception"
         parent="menu_kids_club_main"
+        action="action_reception_wizard"
         sequence="15"/>
 
     <!-- Parents Menu -->
