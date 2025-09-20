@@ -1,0 +1,508 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* kids_club
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 18.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 12:00+0000\n"
+"PO-Revision-Date: 2024-01-01 12:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: ar\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
+
+#. module: kids_club
+#: model:ir.ui.menu,name:kids_club.menu_kids_club_main
+msgid "Kids Club"
+msgstr "نادي الأطفال"
+
+#. module: kids_club
+#: model:ir.ui.menu,name:kids_club.menu_reception_root
+msgid "Reception"
+msgstr "الاستقبال"
+
+#. module: kids_club
+#: model:ir.ui.menu,name:kids_club.menu_parents
+msgid "Parents"
+msgstr "أولياء الأمور"
+
+#. module: kids_club
+#: model:ir.ui.menu,name:kids_club.menu_children
+msgid "Children"
+msgstr "الأطفال"
+
+#. module: kids_club
+#: model:ir.ui.menu,name:kids_club.menu_child_subscriptions
+msgid "Subscriptions"
+msgstr "الاشتراكات"
+
+#. module: kids_club
+#: model:ir.ui.menu,name:kids_club.menu_kids_checkin_root
+msgid "Attendance"
+msgstr "الحضور"
+
+#. module: kids_club
+#: model:ir.ui.menu,name:kids_club.menu_kids_checkin_dashboard
+msgid "Live Dashboard"
+msgstr "لوحة المراقبة المباشرة"
+
+#. module: kids_club
+#: model:ir.ui.menu,name:kids_club.menu_kids_quick_checkin
+msgid "Quick Check-in/Check-out"
+msgstr "تسجيل دخول/خروج سريع"
+
+#. module: kids_club
+#: model:ir.ui.menu,name:kids_club.menu_kids_checkin_history
+msgid "Check-in History"
+msgstr "تاريخ تسجيل الدخول"
+
+#. module: kids_club
+#: model:ir.ui.menu,name:kids_club.menu_kids_club_config
+msgid "Configuration"
+msgstr "الإعدادات"
+
+#. module: kids_club
+#: model:ir.ui.menu,name:kids_club.menu_subscription_packages
+msgid "Packages"
+msgstr "الباقات"
+
+#. module: kids_club
+#: model:ir.ui.menu,name:kids_club.menu_kids_rooms
+msgid "Rooms"
+msgstr "الغرف"
+
+#. module: kids_club
+#: model:ir.ui.menu,name:kids_club.menu_kids_club_pos_settings
+msgid "Settings"
+msgstr "الإعدادات"
+
+#. module: kids_club
+#: model:ir.ui.view,arch_db:kids_club.view_partner_form_kids_club
+msgid "Children"
+msgstr "الأطفال"
+
+#. module: kids_club
+#: model:ir.ui.view,arch_db:kids_club.view_partner_form_kids_club
+msgid "Child Details"
+msgstr "تفاصيل الطفل"
+
+#. module: kids_club
+#: model:ir.ui.view,arch_db:kids_club.view_child_form
+msgid "Child Information"
+msgstr "معلومات الطفل"
+
+#. module: kids_club
+#: model:ir.ui.view,arch_db:kids_club.view_child_form
+msgid "Subscriptions"
+msgstr "الاشتراكات"
+
+#. module: kids_club
+#: model:ir.ui.view,arch_db:kids_club.view_child_form
+msgid "Check-ins"
+msgstr "تسجيلات الدخول"
+
+#. module: kids_club
+#: model:ir.ui.view,arch_db:kids_club.view_child_form
+msgid "Check-in"
+msgstr "تسجيل دخول"
+
+#. module: kids_club
+#: model:ir.ui.view,arch_db:kids_club.view_child_form
+msgid "Quick"
+msgstr "سريع"
+
+#. module: kids_club
+#: model:ir.ui.view,arch_db:kids_club.view_child_form
+msgid "Checked In"
+msgstr "مسجل دخول"
+
+#. module: kids_club
+#: model:ir.ui.view,arch_db:kids_club.view_child_form
+msgid "Click to Check-out"
+msgstr "اضغط لتسجيل الخروج"
+
+#. module: kids_club
+#: model:ir.ui.view,arch_db:kids_club.view_child_form
+msgid "Basic Information"
+msgstr "المعلومات الأساسية"
+
+#. module: kids_club
+#: model:ir.ui.view,arch_db:kids_club.view_child_form
+msgid "Emergency Contact"
+msgstr "جهة الاتصال الطارئة"
+
+#. module: kids_club
+#: model:ir.ui.view,arch_db:kids_club.view_child_form
+msgid "Medical Information"
+msgstr "المعلومات الطبية"
+
+#. module: kids_club
+#: model:ir.ui.view,arch_db:kids_club.view_child_subscription_form
+msgid "Child Subscription"
+msgstr "اشتراك الطفل"
+
+#. module: kids_club
+#: model:ir.ui.view,arch_db:kids_club.view_child_subscription_form
+msgid "Confirm"
+msgstr "تأكيد"
+
+#. module: kids_club
+#: model:ir.ui.view,arch_db:kids_club.view_child_subscription_form
+msgid "Package Selection"
+msgstr "اختيار الباقة"
+
+#. module: kids_club
+#: model:ir.ui.view,arch_db:kids_club.view_child_subscription_form
+msgid "Payment Info"
+msgstr "معلومات الدفع"
+
+#. module: kids_club
+#: model:ir.ui.view,arch_db:kids_club.view_child_subscription_form
+msgid "Visit Tracking"
+msgstr "تتبع الزيارات"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_res_partner__children_ids
+msgid "Children"
+msgstr "الأطفال"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_res_partner__children_count
+msgid "Children"
+msgstr "الأطفال"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_res_partner__is_kids_club_parent
+msgid "Is Kids Club Parent"
+msgstr "ولي أمر في نادي الأطفال"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_res_partner__membership_status
+msgid "Membership Status"
+msgstr "حالة العضوية"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_res_partner__membership_start_date
+msgid "Membership Start Date"
+msgstr "تاريخ بداية العضوية"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child__name
+msgid "Child Name"
+msgstr "اسم الطفل"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child__parent_id
+msgid "Parent"
+msgstr "ولي الأمر"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child__date_of_birth
+msgid "Date of Birth"
+msgstr "تاريخ الميلاد"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child__age
+msgid "Age"
+msgstr "العمر"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child__gender
+msgid "Gender"
+msgstr "الجنس"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child__barcode_id
+msgid "Barcode ID"
+msgstr "رقم الباركود"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child__registration_date
+msgid "Registration Date"
+msgstr "تاريخ التسجيل"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child__emergency_contact
+msgid "Emergency Contact"
+msgstr "جهة الاتصال الطارئة"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child__emergency_phone
+msgid "Emergency Phone"
+msgstr "هاتف الطوارئ"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child__medical_notes
+msgid "Medical Notes"
+msgstr "ملاحظات طبية"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child__allergies
+msgid "Allergies"
+msgstr "الحساسيات"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child__subscription_count
+msgid "Subscriptions"
+msgstr "الاشتراكات"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child__is_checked_in
+msgid "Is Checked In"
+msgstr "مسجل دخول"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child_subscription__child_id
+msgid "Child"
+msgstr "الطفل"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child_subscription__package_id
+msgid "Package"
+msgstr "الباقة"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child_subscription__package_ids
+msgid "Packages"
+msgstr "الباقات"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child_subscription__start_date
+msgid "Start Date"
+msgstr "تاريخ البداية"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child_subscription__end_date
+msgid "End Date"
+msgstr "تاريخ النهاية"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child_subscription__state
+msgid "Status"
+msgstr "الحالة"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child_subscription__total_price
+msgid "Total Price"
+msgstr "السعر الإجمالي"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child_subscription__remaining_days
+msgid "Remaining Days"
+msgstr "الأيام المتبقية"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child_subscription__total_visits_allowed
+msgid "Total Visits Allowed"
+msgstr "إجمالي الزيارات المسموحة"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child_subscription__visits_used
+msgid "Visits Used"
+msgstr "الزيارات المستخدمة"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child_subscription__remaining_visits
+msgid "Remaining Visits"
+msgstr "الزيارات المتبقية"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_subscription_package__name
+msgid "Package Name"
+msgstr "اسم الباقة"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_subscription_package__price
+msgid "Price"
+msgstr "السعر"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_subscription_package__validity_period
+msgid "Validity Period"
+msgstr "فترة الصلاحية"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_subscription_package__validity_days
+msgid "Validity Days"
+msgstr "أيام الصلاحية"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_subscription_package__visits_allowed
+msgid "Visits Allowed"
+msgstr "الزيارات المسموحة"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_subscription_package__free_minutes_per_visit
+msgid "Free Minutes Per Visit"
+msgstr "الدقائق المجانية لكل زيارة"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_subscription_package__overtime_rate
+msgid "Overtime Rate"
+msgstr "سعر الوقت الإضافي"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child_checkin__child_id
+msgid "Child"
+msgstr "الطفل"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child_checkin__checkin_time
+msgid "Check-in Time"
+msgstr "وقت تسجيل الدخول"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child_checkin__checkout_time
+msgid "Check-out Time"
+msgstr "وقت تسجيل الخروج"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child_checkin__duration_minutes
+msgid "Duration (Minutes)"
+msgstr "المدة (بالدقائق)"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child_checkin__room_id
+msgid "Room"
+msgstr "الغرفة"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_child_checkin__state
+msgid "Status"
+msgstr "الحالة"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_room__name
+msgid "Room Name"
+msgstr "اسم الغرفة"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_room__capacity
+msgid "Capacity"
+msgstr "السعة"
+
+#. module: kids_club
+#: model:ir.model.fields,field_description:kids_club.field_kids_room__description
+msgid "Description"
+msgstr "الوصف"
+
+#. module: kids_club
+#: selection:kids_child,gender:0
+msgid "Male"
+msgstr "ذكر"
+
+#. module: kids_club
+#: selection:kids_child,gender:0
+msgid "Female"
+msgstr "أنثى"
+
+#. module: kids_club
+#: selection:res_partner,membership_status:0
+msgid "Active"
+msgstr "نشط"
+
+#. module: kids_club
+#: selection:res_partner,membership_status:0
+msgid "Inactive"
+msgstr "غير نشط"
+
+#. module: kids_club
+#: selection:res_partner,membership_status:0
+msgid "Suspended"
+msgstr "معلق"
+
+#. module: kids_club
+#: selection:kids_child_subscription,state:0
+msgid "Draft"
+msgstr "مسودة"
+
+#. module: kids_club
+#: selection:kids_child_subscription,state:0
+msgid "Confirmed"
+msgstr "مؤكد"
+
+#. module: kids_club
+#: selection:kids_child_subscription,state:0
+msgid "Active"
+msgstr "نشط"
+
+#. module: kids_club
+#: selection:kids_child_subscription,state:0
+msgid "Expired"
+msgstr "منتهي الصلاحية"
+
+#. module: kids_club
+#: selection:kids_child_checkin,state:0
+msgid "Pending OTP"
+msgstr "في انتظار رمز التحقق"
+
+#. module: kids_club
+#: selection:kids_child_checkin,state:0
+msgid "Checked In"
+msgstr "مسجل دخول"
+
+#. module: kids_club
+#: selection:kids_child_checkin,state:0
+msgid "Checked Out"
+msgstr "مسجل خروج"
+
+#. module: kids_club
+#: selection:subscription_package,validity_period:0
+msgid "Weekly (7 days)"
+msgstr "أسبوعي (7 أيام)"
+
+#. module: kids_club
+#: selection:subscription_package,validity_period:0
+msgid "Monthly (30 days)"
+msgstr "شهري (30 يوم)"
+
+#. module: kids_club
+#: selection:subscription_package,validity_period:0
+msgid "Yearly (365 days)"
+msgstr "سنوي (365 يوم)"
+
+#. module: kids_club
+#: selection:subscription_package,validity_period:0
+msgid "Custom Days"
+msgstr "أيام مخصصة"
+
+#. module: kids_club
+#: code:addons/kids_club/models/child.py:0
+#, python-format
+msgid "Child's Full Name"
+msgstr "الاسم الكامل للطفل"
+
+#. module: kids_club
+#: code:addons/kids_club/models/child.py:0
+#, python-format
+msgid "No active subscription found for this child."
+msgstr "لم يتم العثور على اشتراك نشط لهذا الطفل."
+
+#. module: kids_club
+#: code:addons/kids_club/models/child.py:0
+#, python-format
+msgid "No remaining visits for this subscription."
+msgstr "لا توجد زيارات متبقية لهذا الاشتراك."
+
+#. module: kids_club
+#: code:addons/kids_club/models/child.py:0
+#, python-format
+msgid "Child is already checked in."
+msgstr "الطفل مسجل دخول بالفعل."
+
+#. module: kids_club
+#: code:addons/kids_club/models/child.py:0
+#, python-format
+msgid "OTP sent to parent's email successfully!"
+msgstr "تم إرسال رمز التحقق إلى بريد ولي الأمر بنجاح!"
+
+#. module: kids_club
+#: code:addons/kids_club/models/child.py:0
+#, python-format
+msgid "Child checked out successfully!"
+msgstr "تم تسجيل خروج الطفل بنجاح!"
